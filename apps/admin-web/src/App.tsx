@@ -8,7 +8,7 @@ import {
   useAuth,
 } from '@couchrush/auth';
 import { ColorModeToggle } from '@couchrush/theme';
-import { ApiError } from '@couchrush/api-client';
+import { ApiError, type ApiClientOptions } from '@couchrush/api-client';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
@@ -202,10 +202,14 @@ function AppRoutes() {
   );
 }
 
-export function App() {
+interface AppProps {
+  apiClientOptions?: ApiClientOptions;
+}
+
+export function App({ apiClientOptions: apiClientOptionsProp }: AppProps) {
   const apiClientOptions = useMemo(
-    () => ({ baseUrl: import.meta.env.VITE_API_BASE_URL ?? '' }),
-    [],
+    () => apiClientOptionsProp ?? { baseUrl: import.meta.env.VITE_API_BASE_URL ?? '' },
+    [apiClientOptionsProp],
   );
 
   return (

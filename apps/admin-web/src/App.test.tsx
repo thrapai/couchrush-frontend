@@ -1,3 +1,4 @@
+import type { ApiClientOptions } from '@couchrush/api-client';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CouchRushThemeProvider } from '@couchrush/theme';
@@ -7,6 +8,21 @@ type MockResponseInit = {
   status: number;
   body?: unknown;
 };
+
+type MockAxiosResponse = {
+  status: number;
+  data: unknown;
+  statusText: string;
+  headers: Record<string, string>;
+  config: { headers: unknown };
+};
+
+type MockAxiosInstance = {
+  request: typeof requestMock;
+};
+const requestMock = vi.fn<
+  (config: { url?: string; method?: string; headers?: Record<string, string>; data?: unknown }) => Promise<MockAxiosResponse>
+>();
 
 const ADMIN_USER = {
   id: '11111111-1111-1111-1111-111111111111',
@@ -22,47 +38,56 @@ const USER_WITHOUT_ADMIN = {
   permissions: [],
 };
 
-function jsonResponse({ status, body }: MockResponseInit): Response {
-  return new Response(body === undefined ? undefined : JSON.stringify(body), {
+function jsonResponse({ status, body }: MockResponseInit): MockAxiosResponse {
+  return {
     status,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-  });
+    data: body,
+    statusText: '',
+    headers: {},
+    config: { headers: {} as never },
+  };
 }
 
 function renderApp(pathname: string) {
   window.history.pushState({}, '', pathname);
+  const apiClientOptions: ApiClientOptions = {
+    axios: {
+      request: requestMock,
+    } as unknown as MockAxiosInstance & ApiClientOptions['axios'],
+  };
 
   return render(
     <CouchRushThemeProvider defaultMode="dark">
-      <App />
+      <App apiClientOptions={apiClientOptions} />
     </CouchRushThemeProvider>,
   );
 }
 
-function mockFetchSequence(
-  handlers: Array<(input: RequestInfo | URL, init?: RequestInit) => Response | Promise<Response>>,
+function mockRequestSequence(
+  handlers: Array<
+    (
+      config: { url?: string; method?: string; headers?: Record<string, string>; data?: unknown },
+    ) => MockAxiosResponse | Promise<MockAxiosResponse>
+  >,
 ) {
-  const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
-
   handlers.forEach((handler) => {
-    fetchMock.mockImplementationOnce(async (input, init) => handler(input, init));
+    requestMock.mockImplementationOnce(async (config) => handler(config));
   });
 
-  vi.stubGlobal('fetch', fetchMock);
-  return fetchMock;
+  return requestMock;
 }
 
 describe('admin auth flow', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    requestMock.mockReset();
   });
 
   it('supports successful login', async () => {
-    const fetchMock = mockFetchSequence([
+    const axiosMock = mockRequestSequence([
       () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
       () => jsonResponse({ status: 200, body: { access_token: 'token-1', token_type: 'bearer', expires_in: 900 } }),
-      (_, init) => {
-        expect((init?.headers as Headers).get('Authorization')).toBe('Bearer token-1');
+      (config) => {
+        expect(config.headers?.Authorization).toBe('Bearer token-1');
         return jsonResponse({ status: 200, body: ADMIN_USER });
       },
       () => jsonResponse({ status: 200, body: { status: 'ok' } }),
@@ -75,14 +100,13 @@ describe('admin auth flow', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(await screen.findByText('Authenticated and authorized.')).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/auth/login',
-      expect.objectContaining({ credentials: 'include', method: 'POST' }),
+    expect(axiosMock).toHaveBeenCalledWith(
+      expect.objectContaining({ url: '/api/auth/login', method: 'POST' }),
     );
   });
 
   it('shows failed login errors', async () => {
-    mockFetchSequence([
+    mockRequestSequence([
       () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
       () => jsonResponse({ status: 401, body: { detail: 'Invalid credentials.' } }),
     ]);
@@ -97,10 +121,10 @@ describe('admin auth flow', () => {
   });
 
   it('restores the session after refresh', async () => {
-    mockFetchSequence([
+    mockRequestSequence([
       () => jsonResponse({ status: 200, body: { access_token: 'token-2', token_type: 'bearer', expires_in: 900 } }),
-      (_, init) => {
-        expect((init?.headers as Headers).get('Authorization')).toBe('Bearer token-2');
+      (config) => {
+        expect(config.headers?.Authorization).toBe('Bearer token-2');
         return jsonResponse({ status: 200, body: ADMIN_USER });
       },
       () => jsonResponse({ status: 200, body: { status: 'ok' } }),
@@ -112,7 +136,7 @@ describe('admin auth flow', () => {
   });
 
   it('redirects unauthenticated users to login', async () => {
-    mockFetchSequence([() => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } })]);
+    mockRequestSequence([() => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } })]);
 
     renderApp('/admin');
 
@@ -120,13 +144,13 @@ describe('admin auth flow', () => {
   });
 
   it('retries one failed request after a successful refresh', async () => {
-    const fetchMock = mockFetchSequence([
+    const axiosMock = mockRequestSequence([
       () => jsonResponse({ status: 200, body: { access_token: 'expired-token', token_type: 'bearer', expires_in: 900 } }),
       () => jsonResponse({ status: 200, body: ADMIN_USER }),
       () => jsonResponse({ status: 401, body: { detail: 'Unauthorized' } }),
       () => jsonResponse({ status: 200, body: { access_token: 'fresh-token', token_type: 'bearer', expires_in: 900 } }),
-      (_, init) => {
-        expect((init?.headers as Headers).get('Authorization')).toBe('Bearer fresh-token');
+      (config) => {
+        expect(config.headers?.Authorization).toBe('Bearer fresh-token');
         return jsonResponse({ status: 200, body: { status: 'ok' } });
       },
     ]);
@@ -134,11 +158,11 @@ describe('admin auth flow', () => {
     renderApp('/admin');
 
     expect(await screen.findByText('Authenticated and authorized.')).toBeInTheDocument();
-    expect(fetchMock.mock.calls.filter((call) => call[0] === '/api/auth/refresh')).toHaveLength(2);
+    expect(axiosMock.mock.calls.filter(([config]) => config.url === '/api/auth/refresh')).toHaveLength(2);
   });
 
   it('logs out and shows a session-expired message after refresh failure', async () => {
-    mockFetchSequence([
+    mockRequestSequence([
       () => jsonResponse({ status: 200, body: { access_token: 'expired-token', token_type: 'bearer', expires_in: 900 } }),
       () => jsonResponse({ status: 200, body: ADMIN_USER }),
       () => jsonResponse({ status: 401, body: { detail: 'Unauthorized' } }),
@@ -152,7 +176,7 @@ describe('admin auth flow', () => {
   });
 
   it('shows a basic 403 state for authenticated users without admin access', async () => {
-    mockFetchSequence([
+    mockRequestSequence([
       () => jsonResponse({ status: 200, body: { access_token: 'token-3', token_type: 'bearer', expires_in: 900 } }),
       () => jsonResponse({ status: 200, body: USER_WITHOUT_ADMIN }),
       () => jsonResponse({ status: 403, body: { detail: 'Forbidden' } }),

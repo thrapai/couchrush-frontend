@@ -1,3 +1,5 @@
+import axios, { type AxiosInstance } from 'axios';
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -87,7 +89,7 @@ export function getApiErrorMessage(error: unknown, fallback = 'Request failed.')
 
 export interface ApiClientOptions {
   baseUrl?: string;
-  fetch?: typeof fetch;
+  axios?: AxiosInstance;
   getAccessToken?: () => string | null;
   refreshAccessToken?: () => Promise<string | null>;
 }
@@ -101,16 +103,18 @@ interface RequestOptions {
 }
 
 export class ApiClient {
-  private readonly baseUrl: string;
-  private readonly fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  private readonly client: AxiosInstance;
   private readonly getAccessToken?: () => string | null;
   private readonly refreshAccessToken?: () => Promise<string | null>;
 
   constructor(options: ApiClientOptions = {}) {
-    this.baseUrl = options.baseUrl?.replace(/\/$/, '') ?? '';
-    this.fetchImpl = options.fetch
-      ? (input, init) => options.fetch!(input, init)
-      : (input, init) => fetch(input, init);
+    this.client =
+      options.axios ??
+      axios.create({
+        baseURL: options.baseUrl?.replace(/\/$/, '') ?? '',
+        withCredentials: true,
+        validateStatus: () => true,
+      });
     this.getAccessToken = options.getAccessToken;
     this.refreshAccessToken = options.refreshAccessToken;
   }
@@ -155,22 +159,22 @@ export class ApiClient {
   }
 
   private async request<T>(options: RequestOptions, accessTokenOverride?: string | null): Promise<T> {
-    const headers = new Headers();
+    const headers: Record<string, string> = {};
 
     if (options.body !== undefined) {
-      headers.set('Content-Type', 'application/json');
+      headers['Content-Type'] = 'application/json';
     }
 
     const accessToken = accessTokenOverride ?? this.getAccessToken?.() ?? null;
     if (options.authenticated && accessToken) {
-      headers.set('Authorization', `Bearer ${accessToken}`);
+      headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    const response = await this.fetchImpl(`${this.baseUrl}${options.path}`, {
+    const response = await this.client.request({
+      url: options.path,
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
-      credentials: 'include',
+      data: options.body,
     });
 
     if (response.status === 401 && options.authenticated && options.retryOnUnauthorized !== false) {
@@ -180,25 +184,14 @@ export class ApiClient {
       }
     }
 
-    if (!response.ok) {
-      throw new ApiError(response.status, await parseResponseBody(response));
+    if (response.status < 200 || response.status >= 300) {
+      throw new ApiError(response.status, response.data);
     }
 
     if (response.status === 204) {
       return undefined as T;
     }
 
-    return (await parseResponseBody(response)) as T;
+    return response.data as T;
   }
-}
-
-async function parseResponseBody(response: Response): Promise<unknown> {
-  const contentType = response.headers.get('content-type') ?? '';
-
-  if (contentType.includes('application/json')) {
-    return response.json();
-  }
-
-  const text = await response.text();
-  return text.length > 0 ? text : undefined;
 }
