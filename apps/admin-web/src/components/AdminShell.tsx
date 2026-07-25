@@ -1,6 +1,7 @@
 import { Box, Drawer, IconButton, Tooltip } from '@mui/material';
 import { getApiErrorMessage } from '@couchrush/api-client';
 import { useAuth } from '@couchrush/auth';
+import { useTranslation } from '@couchrush/i18n';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useGlobalSnackbar } from '../providers/globalSnackbarContext';
@@ -11,6 +12,7 @@ const COLLAPSED_DRAWER_WIDTH = 88;
 const SIDEBAR_TRANSITION = 'width 220ms cubic-bezier(0.2, 0, 0, 1)';
 
 export function AdminShell() {
+  const { t } = useTranslation(['admin', 'common']);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { showSnackbar } = useGlobalSnackbar();
@@ -23,7 +25,7 @@ export function AdminShell() {
     } catch (error) {
       showSnackbar({
         severity: 'warning',
-        message: getApiErrorMessage(error, 'Signed out locally. The server session could not be revoked.'),
+        message: getApiErrorMessage(error, t('admin.errors.logoutFailedLocalOnly')),
       });
     } finally {
       navigate('/login', { replace: true });
@@ -86,9 +88,9 @@ export function AdminShell() {
 
       <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 3 }, minWidth: 0 }}>
-          <Tooltip title="Open navigation">
+          <Tooltip title={t('admin:admin.shell.openNavigation')}>
             <IconButton
-              aria-label="Open navigation"
+              aria-label={t('admin:admin.shell.openNavigation')}
               onClick={() => setMobileDrawerOpen(true)}
               size="small"
               sx={{
@@ -98,7 +100,7 @@ export function AdminShell() {
                 p: 0.5,
               }}
             >
-              <Box component="img" src="/logo.png" alt="Couchrush" sx={{ display: 'block', width: 32, height: 'auto' }} />
+              <Box component="img" src="/logo.png" alt={t('common:common.brand.logoAlt')} sx={{ display: 'block', width: 32, height: 'auto' }} />
             </IconButton>
           </Tooltip>
           <Outlet />

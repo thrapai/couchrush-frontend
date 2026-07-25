@@ -13,80 +13,90 @@ import type { ReactNode } from 'react';
 
 export interface AdminNavItem {
   id: string;
-  label: string;
+  labelKey: string;
   icon: ReactNode;
   to?: string;
-  description?: string;
+  descriptionKey?: string;
   requiredAnyPermissions?: string[];
   comingSoon?: boolean;
 }
 
 export interface AdminNavSection {
-  label: string;
+  id: string;
+  labelKey: string;
   items: AdminNavItem[];
 }
 
 export const adminNavigationSections: AdminNavSection[] = [
   {
-    label: 'Overview',
+    id: 'overview',
+    labelKey: 'admin.navigation.overview',
     items: [
       {
         id: 'overview',
-        label: 'Overview',
+        labelKey: 'admin.navigation.overview',
         icon: <DashboardRounded fontSize="small" />,
         to: '/admin',
-        description: 'Portal landing page',
+        descriptionKey: 'admin.navigationDescriptions.overview',
       },
     ],
   },
   {
-    label: 'Access Management',
+    id: 'users',
+    labelKey: 'admin.navigation.users',
     items: [
       {
         id: 'users',
-        label: 'Users',
+        labelKey: 'admin.navigation.users',
         icon: <GroupsRounded fontSize="small" />,
         to: '/admin/users',
         requiredAnyPermissions: ['users:read'],
-        description: 'User directory and access',
-      },
-      {
-        id: 'roles-permissions',
-        label: 'Roles & Permissions',
-        icon: <ManageAccountsRounded fontSize="small" />,
-        to: '/admin/access',
-        requiredAnyPermissions: ['roles:manage'],
-        description: 'Role assignment controls',
+        descriptionKey: 'admin.navigationDescriptions.users',
       },
     ],
   },
   {
-    label: 'Content',
+    id: 'roles-permissions',
+    labelKey: 'admin.navigation.rolesPermissions',
+    items: [
+      {
+        id: 'roles-permissions',
+        labelKey: 'admin.navigation.rolesPermissions',
+        icon: <ManageAccountsRounded fontSize="small" />,
+        to: '/admin/access',
+        requiredAnyPermissions: ['roles:manage'],
+        descriptionKey: 'admin.navigationDescriptions.rolesPermissions',
+      },
+    ],
+  },
+  {
+    id: 'content',
+    labelKey: 'admin.navigation.content',
     items: [
       {
         id: 'games',
-        label: 'Games',
+        labelKey: 'admin.navigation.games',
         icon: <SportsEsportsRounded fontSize="small" />,
         requiredAnyPermissions: ['games:read'],
         comingSoon: true,
       },
       {
         id: 'question-sets',
-        label: 'Question Sets',
+        labelKey: 'admin.navigation.questionSets',
         icon: <AutoStoriesRounded fontSize="small" />,
         requiredAnyPermissions: ['games:read'],
         comingSoon: true,
       },
       {
         id: 'questions',
-        label: 'Questions',
+        labelKey: 'admin.navigation.questions',
         icon: <QuestionAnswerRounded fontSize="small" />,
         requiredAnyPermissions: ['games:read'],
         comingSoon: true,
       },
       {
         id: 'translations',
-        label: 'Translations',
+        labelKey: 'admin.navigation.translations',
         icon: <TranslateRounded fontSize="small" />,
         requiredAnyPermissions: ['games:read'],
         comingSoon: true,
@@ -94,18 +104,19 @@ export const adminNavigationSections: AdminNavSection[] = [
     ],
   },
   {
-    label: 'Operations',
+    id: 'operations',
+    labelKey: 'admin.navigation.operations',
     items: [
       {
         id: 'rooms',
-        label: 'Rooms',
+        labelKey: 'admin.navigation.rooms',
         icon: <MeetingRoomRounded fontSize="small" />,
         requiredAnyPermissions: ['rooms:read'],
         comingSoon: true,
       },
       {
         id: 'game-sessions',
-        label: 'Game Sessions',
+        labelKey: 'admin.navigation.gameSessions',
         icon: <AssignmentRounded fontSize="small" />,
         requiredAnyPermissions: ['sessions:read'],
         comingSoon: true,
@@ -113,18 +124,19 @@ export const adminNavigationSections: AdminNavSection[] = [
     ],
   },
   {
-    label: 'System',
+    id: 'system',
+    labelKey: 'admin.navigation.system',
     items: [
       {
         id: 'audit-logs',
-        label: 'Audit Logs',
+        labelKey: 'admin.navigation.auditLogs',
         icon: <ArticleRounded fontSize="small" />,
         requiredAnyPermissions: ['audit:read'],
         comingSoon: true,
       },
       {
         id: 'settings',
-        label: 'Settings',
+        labelKey: 'admin.navigation.settings',
         icon: <SettingsRounded fontSize="small" />,
         requiredAnyPermissions: ['settings:manage'],
         comingSoon: true,

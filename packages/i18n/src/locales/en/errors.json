@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "api": {
+      "network": "Network error. Please try again.",
+      "unauthorized": "Please sign in again.",
+      "forbidden": "You do not have permission to perform this action.",
+      "notFound": "The requested resource was not found."
+    }
+  }
+}

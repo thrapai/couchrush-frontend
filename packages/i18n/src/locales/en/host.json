@@ -1,0 +1,13 @@
+{
+  "host": {
+    "navigation": {
+      "overview": "Overview",
+      "rooms": "Rooms",
+      "sessions": "Game Sessions"
+    },
+    "actions": {
+      "startGame": "Start game",
+      "endGame": "End game"
+    }
+  }
+}

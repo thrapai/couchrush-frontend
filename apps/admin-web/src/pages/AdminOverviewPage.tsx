@@ -1,12 +1,14 @@
 import { Alert, Box, Button, Card, CardContent, Chip, Grid, Skeleton, Stack, Typography } from '@mui/material';
 import { getApiErrorMessage } from '@couchrush/api-client';
 import { useAuth } from '@couchrush/auth';
+import { useTranslation } from '@couchrush/i18n';
 import { Link as RouterLink } from 'react-router-dom';
 import { useActiveUsersMetric, useTotalUsersMetric } from '../hooks/useOverviewDashboard';
 
 const USERS_READ_PERMISSION = 'users:read';
 
 export function AdminOverviewPage() {
+  const { t } = useTranslation('admin');
   const { user } = useAuth();
   const permissions = user?.permissions ?? [];
   const canReadUsers = permissions.includes(USERS_READ_PERMISSION);
@@ -18,7 +20,7 @@ export function AdminOverviewPage() {
     <Stack spacing={3}>
       <Stack spacing={0.75}>
         <Typography variant="h4" component="h1">
-          {displayName ? `Welcome back, ${displayName}` : 'Overview'}
+          {displayName ? t('admin.overview.welcome', { name: displayName }) : t('admin.overview.title')}
         </Typography>
       </Stack>
 
@@ -55,22 +57,24 @@ interface AccessSummaryProps {
 }
 
 function AccessSummary({ roles, permissions }: AccessSummaryProps) {
+  const { t } = useTranslation('admin');
+
   return (
     <Card>
       <CardContent>
         <Stack spacing={2}>
           <Typography variant="h6" component="h2">
-            Your access
+            {t('admin.overview.yourAccess')}
           </Typography>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
-            {roles.length > 0 ? roles.map((role) => <Chip key={role} label={role} />) : <Chip label="No roles" color="default" />}
-            <Chip label={`${permissions.length} permissions`} color="primary" />
+            {roles.length > 0 ? roles.map((role) => <Chip key={role} label={role} />) : <Chip label={t('admin.overview.noRoles')} color="default" />}
+            <Chip label={t('admin.overview.permissionCount', { count: permissions.length })} color="primary" />
           </Stack>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
             {permissions.length > 0 ? (
               permissions.map((permission) => <Chip key={permission} label={permission} variant="outlined" />)
             ) : (
-              <Typography color="text.secondary">No effective permissions are available.</Typography>
+              <Typography color="text.secondary">{t('admin.overview.noPermissions')}</Typography>
             )}
           </Stack>
         </Stack>
@@ -92,13 +96,15 @@ interface MetricState {
 }
 
 function UserMetrics({ canReadUsers, totalUsers, activeUsers }: UserMetricsProps) {
+  const { t } = useTranslation('admin');
+
   if (!canReadUsers) {
     return (
       <Card>
         <CardContent>
           <MetricUnavailable
-            title="User metrics"
-            message="User metrics are unavailable because this account does not have users:read."
+            title={t('admin.overview.userMetrics')}
+            message={t('admin.overview.metricsPermissionUnavailable')}
           />
         </CardContent>
       </Card>
@@ -112,17 +118,17 @@ function UserMetrics({ canReadUsers, totalUsers, activeUsers }: UserMetricsProps
       <CardContent>
         <Stack spacing={2}>
           <Typography variant="h6" component="h2">
-            User metrics
+            {t('admin.overview.userMetrics')}
           </Typography>
           {error ? (
-            <Alert severity="error">{getApiErrorMessage(error, 'User metrics could not be loaded.')}</Alert>
+            <Alert severity="error">{getApiErrorMessage(error, t('admin.overview.metricsLoadError'))}</Alert>
           ) : null}
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <MetricCard label="Total users" state={totalUsers} />
+              <MetricCard label={t('admin.overview.totalUsers')} state={totalUsers} />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <MetricCard label="Active users" state={activeUsers} />
+              <MetricCard label={t('admin.overview.activeUsers')} state={activeUsers} />
             </Grid>
           </Grid>
         </Stack>
@@ -132,6 +138,8 @@ function UserMetrics({ canReadUsers, totalUsers, activeUsers }: UserMetricsProps
 }
 
 function MetricCard({ label, state }: { label: string; state: MetricState }) {
+  const { t } = useTranslation('admin');
+
   return (
     <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, height: '100%', p: 2 }}>
       <Stack spacing={1}>
@@ -139,7 +147,7 @@ function MetricCard({ label, state }: { label: string; state: MetricState }) {
         {state.isLoading ? (
           <Skeleton variant="text" width={80} height={40} />
         ) : state.error || state.value === undefined ? (
-          <MetricUnavailable title={label} message="Unavailable" compact />
+          <MetricUnavailable title={label} message={t('admin.overview.unavailable')} compact />
         ) : (
           <Typography variant="h4">{state.value}</Typography>
         )}
@@ -166,21 +174,23 @@ function MetricUnavailable({ title, message, compact = false }: { title: string;
 }
 
 function QuickActions({ canReadUsers }: { canReadUsers: boolean }) {
+  const { t } = useTranslation('admin');
+
   return (
     <Card>
       <CardContent>
         <Stack spacing={2}>
           <Typography variant="h6" component="h2">
-            Quick actions
+            {t('admin.overview.quickActions')}
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             {canReadUsers ? (
               <Button component={RouterLink} to="/admin/users" variant="contained">
-                Manage users
+                {t('admin.overview.manageUsers')}
               </Button>
             ) : null}
             <Button component={RouterLink} to="/admin/profile" variant="outlined">
-              View my profile
+              {t('admin.overview.viewMyProfile')}
             </Button>
           </Stack>
         </Stack>

@@ -1,10 +1,13 @@
+import { useTranslation } from '@couchrush/i18n';
 import { PagePlaceholder } from './PagePlaceholder';
 
 export function AdminAccessPage() {
+  const { t } = useTranslation('admin');
+
   return (
     <PagePlaceholder
-      title="Roles & Permissions"
-      description="Role and permission management UI will be added later. This placeholder keeps the shell and route ready."
+      title={t('admin.permissions.title')}
+      description={t('admin.permissions.description')}
     />
   );
 }

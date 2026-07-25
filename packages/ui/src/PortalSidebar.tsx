@@ -51,6 +51,12 @@ export interface PortalSidebarProps {
   expandSectionIcon?: ReactNode;
   collapseSectionIcon?: ReactNode;
   footer?: ReactNode;
+  labels?: {
+    openSidebar?: string;
+    collapseSidebar?: string;
+    closeNavigation?: string;
+    more?: string;
+  };
   onToggleCollapsed?: () => void;
   onClose?: () => void;
   onItemSelect?: (item: PortalSidebarItem) => void;
@@ -70,6 +76,7 @@ export function PortalSidebar({
   expandSectionIcon,
   collapseSectionIcon,
   footer,
+  labels,
   onToggleCollapsed,
   onClose,
   onItemSelect,
@@ -132,9 +139,9 @@ export function PortalSidebar({
         }}
       >
         {collapsed ? (
-          <Tooltip title="Open sidebar">
+          <Tooltip title={labels?.openSidebar ?? 'Open sidebar'}>
             <IconButton
-              aria-label="Open sidebar"
+              aria-label={labels?.openSidebar ?? 'Open sidebar'}
               onClick={onToggleCollapsed}
               sx={{
                 display: { xs: 'none', md: 'inline-flex' },
@@ -153,9 +160,9 @@ export function PortalSidebar({
         ) : (
           <>
             {brand}
-            <Tooltip title="Collapse sidebar">
+            <Tooltip title={labels?.collapseSidebar ?? 'Collapse sidebar'}>
               <IconButton
-                aria-label="Collapse sidebar"
+                aria-label={labels?.collapseSidebar ?? 'Collapse sidebar'}
                 onClick={onToggleCollapsed}
                 sx={{
                   display: { xs: 'none', md: 'inline-flex' },
@@ -173,7 +180,7 @@ export function PortalSidebar({
         )}
         {onClose && mobileCloseIcon ? (
           <IconButton
-            aria-label="Close navigation"
+            aria-label={labels?.closeNavigation ?? 'Close navigation'}
             onClick={onClose}
             sx={{ display: { md: 'none' }, position: 'absolute', top: 12, right: 12 }}
           >
@@ -220,7 +227,7 @@ export function PortalSidebar({
             ))}
             {overflowCollapsedItems.length > 0 ? (
               <>
-                <Tooltip title="More">
+                <Tooltip title={labels?.more ?? 'More'}>
                   <ListItemButton
                     onClick={(event) => setMoreAnchorEl(event.currentTarget)}
                     sx={{
@@ -354,7 +361,8 @@ function PortalSidebarNavItem({ item, selected, collapsed, onSelect }: PortalSid
           width: collapsed ? RAIL_ITEM_WIDTH : '100%',
           borderRadius: 1,
           justifyContent: collapsed ? 'center' : 'flex-start',
-          px: 0,
+          pl: 0,
+          pr: collapsed ? 0 : 1.25,
           alignItems: 'center',
           mx: collapsed ? 'auto' : 0,
           transition: SIDEBAR_TRANSITION,

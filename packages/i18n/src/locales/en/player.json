@@ -1,0 +1,13 @@
+{
+  "player": {
+    "actions": {
+      "join": "Join",
+      "leave": "Leave",
+      "submitAnswer": "Submit answer"
+    },
+    "status": {
+      "waiting": "Waiting",
+      "loadingQuestion": "Loading question"
+    }
+  }
+}

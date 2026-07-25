@@ -1,12 +1,14 @@
 import { Link, TextField, Typography } from '@mui/material';
 import { type RegisterRequest, getApiErrorMessage } from '@couchrush/api-client';
 import { useAuth } from '@couchrush/auth';
+import { useTranslation } from '@couchrush/i18n';
 import { AuthFormCard } from '@couchrush/ui';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 export function RegisterPage() {
+  const { t } = useTranslation(['common', 'admin']);
   const { client } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -22,12 +24,12 @@ export function RegisterPage() {
         replace: true,
         state: {
           registeredEmail: payload.email,
-          registrationMessage: 'Account created. You can sign in now.',
+          registrationMessage: t('admin:admin.auth.registrationSuccess'),
         },
       });
     },
     onError: (error) => {
-      setErrorMessage(getApiErrorMessage(error, 'Registration failed.'));
+      setErrorMessage(getApiErrorMessage(error, t('admin:admin.auth.registrationFailed')));
     },
   });
 
@@ -48,30 +50,30 @@ export function RegisterPage() {
 
   return (
     <AuthFormCard
-      title="Create account"
-      subtitle="Register a Couchrush account."
-      submitLabel="Register"
+      title={t('admin:admin.auth.registerTitle')}
+      subtitle={t('admin:admin.auth.registerSubtitle')}
+      submitLabel={t('common:common.auth.register')}
       isSubmitting={registerMutation.isPending}
       errorMessage={errorMessage}
       footer={
         <Typography color="text.secondary">
-          Already have an account?{' '}
+          {t('admin:admin.auth.alreadyHaveAccount')}{' '}
           <Link component={RouterLink} to="/login" underline="hover">
-            Sign in
+            {t('admin:admin.auth.signIn')}
           </Link>
         </Typography>
       }
       onSubmit={handleSubmit}
     >
       <TextField
-        label="Display name"
+        label={t('common:common.auth.displayName')}
         autoComplete="nickname"
         value={displayName}
         onChange={(event) => setDisplayName(event.target.value)}
         disabled={registerMutation.isPending}
       />
       <TextField
-        label="Email"
+        label={t('common:common.auth.email')}
         type="email"
         autoComplete="email"
         value={email}
@@ -80,7 +82,7 @@ export function RegisterPage() {
         required
       />
       <TextField
-        label="Password"
+        label={t('common:common.auth.password')}
         type="password"
         autoComplete="new-password"
         value={password}

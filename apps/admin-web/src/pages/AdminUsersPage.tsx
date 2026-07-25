@@ -1,10 +1,13 @@
+import { useTranslation } from '@couchrush/i18n';
 import { PagePlaceholder } from './PagePlaceholder';
 
 export function AdminUsersPage() {
+  const { t } = useTranslation('admin');
+
   return (
     <PagePlaceholder
-      title="Users"
-      description="User management UI will be added later. This placeholder is routed inside the shared admin shell."
+      title={t('admin.users.title')}
+      description={t('admin.users.description')}
     />
   );
 }

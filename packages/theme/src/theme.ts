@@ -309,6 +309,7 @@ export const couchRushTheme = createTheme({
         root: {
           minHeight: layout.minimumTouchTarget,
           paddingInline: 18,
+          border: '1px solid transparent',
           borderRadius: radius.medium,
           fontWeight: 800,
           transition: 'transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease',

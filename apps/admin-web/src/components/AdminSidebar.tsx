@@ -6,6 +6,7 @@ import KeyboardDoubleArrowRightRounded from '@mui/icons-material/KeyboardDoubleA
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded';
 import { Box, Typography } from '@mui/material';
 import type { CurrentUserResponse } from '@couchrush/api-client';
+import { useTranslation } from '@couchrush/i18n';
 import { couchRushFonts } from '@couchrush/theme';
 import { PortalSidebar, type PortalSidebarItem, type PortalSidebarSection } from '@couchrush/ui';
 import { useMemo } from 'react';
@@ -32,28 +33,29 @@ export function AdminSidebar({
   onNavigate,
   onClose,
 }: AdminSidebarProps) {
+  const { t } = useTranslation(['admin', 'common']);
   const navigate = useNavigate();
   const location = useLocation();
   const sections = useMemo<PortalSidebarSection[]>(
     () =>
       adminNavigationSections
         .map((section) => ({
-          id: section.label,
-          label: section.label,
+          id: section.id,
+          label: t(section.labelKey),
           items: section.items
             .filter((item) => hasAnyPermission(permissions, item.requiredAnyPermissions))
             .map((item) => ({
               id: item.id,
-              label: item.label,
+              label: t(item.labelKey),
               icon: item.icon,
               href: item.to,
-              description: item.description,
+              description: item.descriptionKey ? t(item.descriptionKey) : undefined,
               disabled: item.comingSoon || !item.to,
-              disabledBadgeLabel: item.comingSoon ? 'Soon' : undefined,
+              disabledBadgeLabel: item.comingSoon ? t('admin.navigation.soon') : undefined,
             })),
         }))
         .filter((section) => section.items.length > 0),
-    [permissions],
+    [permissions, t],
   );
 
   const selectedItemId = useMemo(() => {
@@ -82,7 +84,7 @@ export function AdminSidebar({
       sections={sections}
       selectedItemId={selectedItemId}
       collapsed={collapsed}
-      collapsedPinnedItemIds={['overview', 'roles-permissions']}
+      collapsedPinnedItemIds={['overview', 'users', 'roles-permissions']}
       brand={
         <Typography
           variant="h5"
@@ -97,7 +99,7 @@ export function AdminSidebar({
           CouchRush
         </Typography>
       }
-      collapsedLogo={<Box component="img" src="/logo.png" alt="Couchrush" sx={{ display: 'block', width: 32, height: 'auto' }} />}
+      collapsedLogo={<Box component="img" src="/logo.png" alt={t('common:common.brand.logoAlt')} sx={{ display: 'block', width: 32, height: 'auto' }} />}
       openIcon={<KeyboardDoubleArrowRightRounded sx={{ fontSize: 26 }} />}
       closeIcon={<KeyboardDoubleArrowLeftRounded sx={{ fontSize: 26 }} />}
       mobileCloseIcon={<CloseRounded />}
@@ -105,6 +107,12 @@ export function AdminSidebar({
       expandSectionIcon={<ExpandMoreRounded fontSize="small" color="disabled" />}
       collapseSectionIcon={<ExpandLessRounded fontSize="small" color="disabled" />}
       footer={<UserMenu user={user} onLogout={onLogout ?? (async () => {})} collapsed={collapsed} />}
+      labels={{
+        openSidebar: t('admin.shell.openSidebar'),
+        collapseSidebar: t('admin.shell.collapseSidebar'),
+        closeNavigation: t('admin.shell.closeNavigation'),
+        more: t('admin.shell.more'),
+      }}
       onToggleCollapsed={onToggleDesktop}
       onClose={onClose}
       onItemSelect={handleItemSelect}

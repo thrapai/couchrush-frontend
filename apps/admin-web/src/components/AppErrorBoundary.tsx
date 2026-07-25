@@ -1,4 +1,5 @@
 import { Alert, Button, Typography } from '@mui/material';
+import { i18n } from '@couchrush/i18n';
 import { Component, type ReactNode } from 'react';
 import { CenteredMessage } from './CenteredMessage';
 
@@ -27,11 +28,11 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
       return (
         <CenteredMessage>
           <Typography variant="h4" component="h1">
-            Application error
+            {i18n.t('common:common.errors.applicationTitle')}
           </Typography>
-          <Alert severity="error">Something went wrong while loading the admin portal.</Alert>
+          <Alert severity="error">{i18n.t('admin:admin.errors.portalLoadFailed')}</Alert>
           <Button variant="contained" onClick={this.handleReload}>
-            Reload
+            {i18n.t('common:common.actions.reload')}
           </Button>
         </CenteredMessage>
       );

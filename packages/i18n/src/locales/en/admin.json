@@ -1,0 +1,85 @@
+{
+  "admin": {
+    "navigation": {
+      "overview": "Overview",
+      "accessManagement": "Access Management",
+      "users": "Users",
+      "rolesPermissions": "Roles & Permissions",
+      "profile": "My Profile",
+      "content": "Content",
+      "games": "Games",
+      "questionSets": "Question Sets",
+      "questions": "Questions",
+      "translations": "Translations",
+      "operations": "Operations",
+      "rooms": "Rooms",
+      "gameSessions": "Game Sessions",
+      "system": "System",
+      "auditLogs": "Audit Logs",
+      "settings": "Settings",
+      "soon": "Soon"
+    },
+    "navigationDescriptions": {
+      "overview": "Portal landing page",
+      "users": "User directory and access",
+      "rolesPermissions": "Role assignment controls"
+    },
+    "shell": {
+      "openNavigation": "Open navigation",
+      "closeNavigation": "Close navigation",
+      "openSidebar": "Open sidebar",
+      "collapseSidebar": "Collapse sidebar",
+      "more": "More"
+    },
+    "actions": {
+      "backToOverview": "Back to overview"
+    },
+    "auth": {
+      "loginTitle": "Couchrush Admin",
+      "loginSubtitle": "Sign in with your admin account.",
+      "signIn": "Sign in",
+      "signInFailed": "Sign-in failed.",
+      "needAccount": "Need an account?",
+      "registerTitle": "Create account",
+      "registerSubtitle": "Register a Couchrush account.",
+      "registrationSuccess": "Account created. You can sign in now.",
+      "registrationFailed": "Registration failed.",
+      "alreadyHaveAccount": "Already have an account?"
+    },
+    "errors": {
+      "portalLoadFailed": "Something went wrong while loading the admin portal.",
+      "logoutFailedLocalOnly": "Signed out locally. The server session could not be revoked."
+    },
+    "overview": {
+      "title": "Overview",
+      "welcome": "Welcome back, {{name}}",
+      "yourAccess": "Your access",
+      "permissionCount": "{{count}} permissions",
+      "noRoles": "No roles",
+      "noPermissions": "No effective permissions are available.",
+      "userMetrics": "User metrics",
+      "totalUsers": "Total users",
+      "activeUsers": "Active users",
+      "metricsPermissionUnavailable": "User metrics are unavailable because this account does not have users:read.",
+      "metricsLoadError": "User metrics could not be loaded.",
+      "unavailable": "Unavailable",
+      "quickActions": "Quick actions",
+      "manageUsers": "Manage users",
+      "viewMyProfile": "View my profile"
+    },
+    "users": {
+      "title": "Users",
+      "description": "User management UI will be added later. This placeholder is routed inside the shared admin shell."
+    },
+    "profile": {
+      "title": "My Profile",
+      "description": "Profile editing will be added later. Current session details are shown below.",
+      "emailLabel": "Email: {{email}}",
+      "roles": "Roles"
+    },
+    "permissions": {
+      "title": "Roles & Permissions",
+      "description": "Role and permission management UI will be added later. This placeholder keeps the shell and route ready."
+    }
+  }
+}

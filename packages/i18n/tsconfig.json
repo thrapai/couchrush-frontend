@@ -1,0 +1,7 @@
+{
+  "extends": "../typescript-config/react.json",
+  "compilerOptions": {
+    "resolveJsonModule": true
+  },
+  "include": ["src", "eslint.config.mjs"]
+}

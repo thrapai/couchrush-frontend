@@ -1,6 +1,7 @@
 import { Checkbox, FormControlLabel, Link, TextField, Typography } from '@mui/material';
 import { getApiErrorMessage } from '@couchrush/api-client';
-import { getSessionExpiredMessage, useAuth } from '@couchrush/auth';
+import { useAuth } from '@couchrush/auth';
+import { useTranslation } from '@couchrush/i18n';
 import { AuthFormCard } from '@couchrush/ui';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
@@ -19,6 +20,7 @@ type LoginLocationState = {
 } | null;
 
 export function LoginPage() {
+  const { t } = useTranslation(['common', 'admin']);
   const { login, isSessionExpired, isLoggingIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,7 +29,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(() => getRememberEmailEnabled());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const sessionExpiredMessage = getSessionExpiredMessage(isSessionExpired);
+  const sessionExpiredMessage = isSessionExpired ? t('common:common.errors.sessionExpired') : null;
   const registrationMessage = locationState?.registrationMessage ?? null;
   const from = locationState?.from?.pathname ?? '/admin';
 
@@ -45,7 +47,7 @@ export function LoginPage() {
       await login({ email, password });
       navigate(from, { replace: true });
     } catch (error) {
-      setErrorMessage(getApiErrorMessage(error, 'Sign-in failed.'));
+      setErrorMessage(getApiErrorMessage(error, t('admin:admin.auth.signInFailed')));
     }
   }
 
@@ -55,25 +57,25 @@ export function LoginPage() {
 
   return (
     <AuthFormCard
-      title="Couchrush Admin"
-      subtitle="Sign in with your admin account."
-      submitLabel="Sign in"
+      title={t('admin:admin.auth.loginTitle')}
+      subtitle={t('admin:admin.auth.loginSubtitle')}
+      submitLabel={t('admin:admin.auth.signIn')}
       isSubmitting={isLoggingIn}
       warningMessage={sessionExpiredMessage}
       errorMessage={errorMessage}
       successMessage={registrationMessage}
       footer={
         <Typography color="text.secondary">
-          Need an account?{' '}
+          {t('admin:admin.auth.needAccount')}{' '}
           <Link component={RouterLink} to="/register" underline="hover">
-            Register
+            {t('common:common.auth.register')}
           </Link>
         </Typography>
       }
       onSubmit={handleSubmit}
     >
       <TextField
-        label="Email"
+        label={t('common:common.auth.email')}
         type="email"
         autoComplete="email"
         value={email}
@@ -82,7 +84,7 @@ export function LoginPage() {
         required
       />
       <TextField
-        label="Password"
+        label={t('common:common.auth.password')}
         type="password"
         autoComplete="current-password"
         value={password}
@@ -92,7 +94,7 @@ export function LoginPage() {
       />
       <FormControlLabel
         control={<Checkbox checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} disabled={isLoggingIn} />}
-        label="Remember email"
+        label={t('common:common.auth.rememberEmail')}
       />
     </AuthFormCard>
   );

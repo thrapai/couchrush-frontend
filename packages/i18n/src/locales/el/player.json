@@ -1,0 +1,13 @@
+{
+  "player": {
+    "actions": {
+      "join": "Συμμετοχή",
+      "leave": "Αποχώρηση",
+      "submitAnswer": "Υποβολή απάντησης"
+    },
+    "status": {
+      "waiting": "Αναμονή",
+      "loadingQuestion": "Φόρτωση ερώτησης"
+    }
+  }
+}

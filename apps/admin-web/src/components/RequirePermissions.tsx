@@ -2,6 +2,7 @@ import { Alert, Button } from '@mui/material';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@couchrush/auth';
+import { useTranslation } from '@couchrush/i18n';
 import { CenteredMessage } from './CenteredMessage';
 
 interface RequirePermissionsProps {
@@ -11,6 +12,7 @@ interface RequirePermissionsProps {
 
 export function RequirePermissions({ children, requiredAnyPermissions }: RequirePermissionsProps) {
   const { user } = useAuth();
+  const { t } = useTranslation(['common', 'admin']);
   const navigate = useNavigate();
 
   if (!requiredAnyPermissions || requiredAnyPermissions.length === 0) {
@@ -24,9 +26,9 @@ export function RequirePermissions({ children, requiredAnyPermissions }: Require
 
   return (
     <CenteredMessage>
-      <Alert severity="error">You are signed in, but you do not have access to this page.</Alert>
+      <Alert severity="error">{t('common:common.errors.forbiddenSignedIn')}</Alert>
       <Button variant="outlined" onClick={() => navigate('/admin', { replace: true })}>
-        Back to overview
+        {t('admin:admin.actions.backToOverview')}
       </Button>
     </CenteredMessage>
   );

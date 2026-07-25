@@ -16,6 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useColorScheme } from '@mui/material/styles';
+import { LanguageSwitcher, useTranslation } from '@couchrush/i18n';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { CurrentUserResponse } from '@couchrush/api-client';
@@ -38,13 +39,14 @@ function formatRole(role: string) {
 
 export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   const { mode, setMode } = useColorScheme();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const isOpen = Boolean(anchorEl);
   const primaryRole = formatRole(user.roles[0] ?? 'USER');
   const resolvedMode = mode === 'system' || !mode ? 'dark' : mode;
   const nextMode = resolvedMode === 'dark' ? 'light' : 'dark';
-  const colorModeLabel = `Switch to ${nextMode} mode`;
+  const colorModeLabel = t(nextMode === 'light' ? 'common.theme.switchToLightMode' : 'common.theme.switchToDarkMode');
   const displayName = user.display_name?.trim() || user.email;
   const avatarSeed = (user.display_name?.trim() || user.email).slice(0, 2).toUpperCase();
 
@@ -56,9 +58,9 @@ export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
   return (
     <>
       {collapsed ? (
-        <Tooltip title="Open user menu">
+        <Tooltip title={t('common.userMenu.open')}>
           <IconButton
-            aria-label="Open user menu"
+            aria-label={t('common.userMenu.open')}
             onClick={(event) => setAnchorEl(event.currentTarget)}
             color="inherit"
             size="small"
@@ -102,8 +104,14 @@ export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
               {primaryRole}
             </Typography>
           </Box>
-          <Tooltip title="Open user menu">
-            <IconButton aria-label="Open user menu" onClick={(event) => setAnchorEl(event.currentTarget)} color="inherit" size="small" sx={{ p: 0.5, borderRadius: 1 }}>
+          <Tooltip title={t('common.userMenu.open')}>
+            <IconButton
+              aria-label={t('common.userMenu.open')}
+              onClick={(event) => setAnchorEl(event.currentTarget)}
+              color="inherit"
+              size="small"
+              sx={{ p: 0.5, borderRadius: 1 }}
+            >
               <MoreHorizRounded fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -124,6 +132,9 @@ export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
           </Box>
         </Box>
         <Divider />
+        <Box sx={{ px: 1.25, py: 1 }}>
+          <LanguageSwitcher />
+        </Box>
         <MenuItem onClick={() => setMode(nextMode)}>
           <ListItemIcon>
             {nextMode === 'light' ? <LightModeRounded fontSize="small" /> : <DarkModeRounded fontSize="small" />}
@@ -139,13 +150,13 @@ export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
           <ListItemIcon>
             <PersonRounded fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="My Profile" />
+          <ListItemText primary={t('common.auth.profile')} />
         </MenuItem>
         <MenuItem onClick={() => void handleLogout()}>
           <ListItemIcon>
             <LogoutRounded fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Logout" />
+          <ListItemText primary={t('common.auth.logout')} />
         </MenuItem>
       </Menu>
     </>

@@ -7,6 +7,7 @@
 - Do not recreate colours, typography, spacing, radii, or shadows inside apps.
 - Use Bungee only for display headings, scores, and major game moments.
 - Use Inter for body text, forms, tables, menus, and controls.
+- All user-facing text must use shared i18n translation keys; never hard-code UI copy in components. Add both English and Greek translations for every new key.
 
 ## Components
 
