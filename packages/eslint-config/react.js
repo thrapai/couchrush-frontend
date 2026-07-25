@@ -4,6 +4,6 @@ import base from './base.js';
 
 export default [
   ...base,
-  reactHooks.configs['recommended-latest'],
+  reactHooks.configs.flat['recommended-latest'],
   reactRefresh.configs.vite,
 ];

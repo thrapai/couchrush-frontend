@@ -15,7 +15,7 @@
   "devDependencies": {
     "@couchrush/eslint-config": "workspace:*",
     "@couchrush/typescript-config": "workspace:*",
-    "eslint": "^9.31.0",
-    "typescript": "^5.8.3"
+    "eslint": "^10.7.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
 }
