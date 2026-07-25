@@ -6,12 +6,13 @@ import {
   CircularProgress,
   Container,
   FormControlLabel,
+  Link,
   Paper,
   TextField,
   Typography,
 } from '@mui/material';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { getApiErrorMessage } from '@couchrush/api-client';
+import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query';
+import { getApiErrorMessage, type RegisterRequest } from '@couchrush/api-client';
 import {
   AuthProvider,
   RedirectIfAuthenticated,
@@ -21,8 +22,9 @@ import {
 } from '@couchrush/auth';
 import { ColorModeToggle } from '@couchrush/theme';
 import { ApiError, type ApiClientOptions } from '@couchrush/api-client';
+import { AuthFormCard } from '@couchrush/ui';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Link as RouterLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
 const REMEMBER_EMAIL_KEY = 'couchrush.admin.remember_email';
 const REMEMBER_EMAIL_ENABLED_KEY = 'couchrush.admin.remember_email.enabled';
@@ -85,13 +87,17 @@ function LoginPage() {
   const { login, status, isSessionExpired, isLoggingIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState(() => getRememberedEmail());
+  const locationState = location.state as
+    | { from?: { pathname?: string }; registeredEmail?: string; registrationMessage?: string }
+    | null;
+  const [email, setEmail] = useState(() => locationState?.registeredEmail ?? getRememberedEmail());
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(() => getRememberEmailEnabled());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const sessionExpiredMessage = getSessionExpiredMessage(isSessionExpired);
+  const registrationMessage = locationState?.registrationMessage ?? null;
 
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/admin';
+  const from = locationState?.from?.pathname ?? '/admin';
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -128,47 +134,143 @@ function LoginPage() {
   }
 
   return (
-    <CenteredMessage>
-      <Typography variant="h4" component="h1">
-        Couchrush Admin
-      </Typography>
-      <Typography color="text.secondary">Sign in with your admin account.</Typography>
-      {sessionExpiredMessage ? <Alert severity="warning">{sessionExpiredMessage}</Alert> : null}
-      {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField
-          label="Email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          disabled={isLoggingIn}
-          required
-        />
-        <TextField
-          label="Password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          disabled={isLoggingIn}
-          required
-        />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={rememberMe}
-              onChange={(event) => setRememberMe(event.target.checked)}
-              disabled={isLoggingIn}
-            />
-          }
-          label="Remember email"
-        />
-        <Button type="submit" variant="contained" disabled={isLoggingIn}>
-          {isLoggingIn ? <CircularProgress color="inherit" size={20} /> : 'Sign in'}
-        </Button>
-      </Box>
-    </CenteredMessage>
+    <AuthFormCard
+      title="Couchrush Admin"
+      subtitle="Sign in with your admin account."
+      submitLabel="Sign in"
+      isSubmitting={isLoggingIn}
+      warningMessage={sessionExpiredMessage}
+      errorMessage={errorMessage}
+      successMessage={registrationMessage}
+      footer={
+        <Typography color="text.secondary">
+          Need an account?{' '}
+          <Link component={RouterLink} to="/register" underline="hover">
+            Register
+          </Link>
+        </Typography>
+      }
+      onSubmit={handleSubmit}
+    >
+      <TextField
+        label="Email"
+        type="email"
+        autoComplete="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        disabled={isLoggingIn}
+        required
+      />
+      <TextField
+        label="Password"
+        type="password"
+        autoComplete="current-password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+        disabled={isLoggingIn}
+        required
+      />
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={rememberMe}
+            onChange={(event) => setRememberMe(event.target.checked)}
+            disabled={isLoggingIn}
+          />
+        }
+        label="Remember email"
+      />
+    </AuthFormCard>
+  );
+}
+
+function RegisterPage() {
+  const { client, status } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const registerMutation = useMutation({
+    mutationFn: async (payload: RegisterRequest) => client.register(payload),
+    onSuccess: async (_, payload) => {
+      setErrorMessage(null);
+      navigate('/login', {
+        replace: true,
+        state: {
+          registeredEmail: payload.email,
+          registrationMessage: 'Account created. You can sign in now.',
+        },
+      });
+    },
+    onError: (error) => {
+      setErrorMessage(getApiErrorMessage(error, 'Registration failed.'));
+    },
+  });
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorMessage(null);
+
+    try {
+      await registerMutation.mutateAsync({
+        email,
+        password,
+        display_name: displayName.trim() ? displayName.trim() : null,
+      });
+    } catch {
+      return;
+    }
+  }
+
+  if (status === 'loading') {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <AuthFormCard
+      title="Create account"
+      subtitle="Register a Couchrush account."
+      submitLabel="Register"
+      isSubmitting={registerMutation.isPending}
+      errorMessage={errorMessage}
+      footer={
+        <Typography color="text.secondary">
+          Already have an account?{' '}
+          <Link component={RouterLink} to="/login" underline="hover">
+            Sign in
+          </Link>
+        </Typography>
+      }
+      onSubmit={handleSubmit}
+    >
+      <TextField
+        label="Display name"
+        autoComplete="nickname"
+        value={displayName}
+        onChange={(event) => setDisplayName(event.target.value)}
+        disabled={registerMutation.isPending}
+      />
+      <TextField
+        label="Email"
+        type="email"
+        autoComplete="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        disabled={registerMutation.isPending}
+        required
+      />
+      <TextField
+        label="Password"
+        type="password"
+        autoComplete="new-password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+        disabled={registerMutation.isPending}
+        required
+      />
+    </AuthFormCard>
   );
 }
 
@@ -254,6 +356,7 @@ function AppRoutes() {
       <Route element={<PageShell />}>
         <Route element={<RedirectIfAuthenticated />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Route>
         <Route element={<RequireAuth />}>
           <Route path="/admin" element={<AdminPage />} />

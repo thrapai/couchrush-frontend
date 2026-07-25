@@ -146,6 +146,15 @@ describe('admin auth flow', () => {
     expect(await screen.findByText('Invalid credentials.')).toBeInTheDocument();
   });
 
+  it('does not show a session-expired warning on a first login-page visit', async () => {
+    mockRequestSequence([() => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } })]);
+
+    renderApp('/login');
+
+    expect(await screen.findByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
+    expect(screen.queryByText('Your session has expired. Please sign in again.')).not.toBeInTheDocument();
+  });
+
   it('restores the session after refresh', async () => {
     mockRequestSequence([
       () => jsonResponse({ status: 200, body: { access_token: 'token-2', token_type: 'bearer', expires_in: 900 } }),
@@ -239,5 +248,49 @@ describe('admin auth flow', () => {
 
     expect(await screen.findByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('admin@example.com');
+  });
+
+  it('supports successful registration and redirects to login', async () => {
+    mockRequestSequence([
+      () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
+      () =>
+        jsonResponse({
+          status: 201,
+          body: {
+            id: '22222222-2222-2222-2222-222222222222',
+            email: 'new-user@example.com',
+            display_name: 'Alex',
+            is_active: true,
+            roles: ['USER'],
+            created_at: '2026-07-25T12:00:00Z',
+          },
+        }),
+    ]);
+
+    renderApp('/register');
+
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Display name' }), 'Alex');
+    await userEvent.type(screen.getByRole('textbox', { name: 'Email' }), 'new-user@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'change-this-password');
+    await userEvent.click(screen.getByRole('button', { name: 'Register' }));
+
+    expect(await screen.findByText('Account created. You can sign in now.')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('new-user@example.com');
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('shows failed registration errors', async () => {
+    mockRequestSequence([
+      () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
+      () => jsonResponse({ status: 409, body: { detail: 'Email already registered.' } }),
+    ]);
+
+    renderApp('/register');
+
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Email' }), 'admin@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'change-this-password');
+    await userEvent.click(screen.getByRole('button', { name: 'Register' }));
+
+    expect(await screen.findByText('Email already registered.')).toBeInTheDocument();
   });
 });

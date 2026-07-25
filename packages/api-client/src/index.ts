@@ -5,6 +5,12 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  display_name?: string | null;
+}
+
 export interface AccessTokenResponse {
   access_token: string;
   token_type: 'bearer';
@@ -17,6 +23,15 @@ export interface CurrentUserResponse {
   is_active: boolean;
   roles: string[];
   permissions: string[];
+}
+
+export interface RegisteredUserResponse {
+  id: string;
+  email: string;
+  display_name: string | null;
+  is_active: boolean;
+  roles: string[];
+  created_at: string;
 }
 
 export interface ValidationErrorItem {
@@ -123,6 +138,15 @@ export class ApiClient {
     return this.request<AccessTokenResponse>({
       method: 'POST',
       path: '/api/auth/login',
+      body: payload,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async register(payload: RegisterRequest): Promise<RegisteredUserResponse> {
+    return this.request<RegisteredUserResponse>({
+      method: 'POST',
+      path: '/api/auth/register',
       body: payload,
       retryOnUnauthorized: false,
     });

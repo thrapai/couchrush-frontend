@@ -46,6 +46,7 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
   const accessTokenRef = useRef<string | null>(null);
   const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
   const didAttemptRestoreRef = useRef(false);
+  const hadAuthenticatedSessionRef = useRef(false);
 
   const refreshClient = useMemo(() => new ApiClient(apiClientOptions), [apiClientOptions]);
 
@@ -54,7 +55,7 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
     setAccessToken(null);
     setIsSessionExpired(sessionExpired);
     didAttemptRestoreRef.current = true;
-    queryClientInstance.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
+    queryClientInstance.setQueryData(AUTH_ME_QUERY_KEY, null);
   }
 
   async function performRefresh(): Promise<string | null> {
@@ -68,9 +69,13 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
         accessTokenRef.current = refreshed.access_token;
         setAccessToken(refreshed.access_token);
         setIsSessionExpired(false);
+        hadAuthenticatedSessionRef.current = true;
         return refreshed.access_token;
       } catch (error) {
-        clearAuthState(queryClient, error instanceof ApiError && error.status === 401);
+        clearAuthState(
+          queryClient,
+          error instanceof ApiError && error.status === 401 && hadAuthenticatedSessionRef.current,
+        );
         if (error instanceof ApiError && error.status !== 401) {
           throw error;
         }
@@ -131,6 +136,7 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
       accessTokenRef.current = token;
       setAccessToken(token);
       setIsSessionExpired(false);
+      hadAuthenticatedSessionRef.current = true;
 
       const tokenClient = new ApiClient({
         ...apiClientOptions,
@@ -153,6 +159,7 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
       await refreshClient.logout();
     },
     onSettled: () => {
+      hadAuthenticatedSessionRef.current = false;
       clearAuthState(queryClient, false);
     },
   });
