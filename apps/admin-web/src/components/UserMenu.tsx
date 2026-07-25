@@ -20,6 +20,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { CurrentUserResponse } from '@couchrush/api-client';
 
+const SIDEBAR_TRANSITION = 'all 220ms cubic-bezier(0.2, 0, 0, 1)';
+
 interface UserMenuProps {
   user: CurrentUserResponse;
   onLogout: () => Promise<void>;
@@ -60,7 +62,15 @@ export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
             onClick={(event) => setAnchorEl(event.currentTarget)}
             color="inherit"
             size="small"
-            sx={{ borderRadius: 1, p: 0.5, mx: 'auto', display: 'flex' }}
+            sx={{
+              width: 56,
+              height: 50,
+              borderRadius: 1,
+              p: 0,
+              mx: 'auto',
+              display: 'flex',
+              transition: SIDEBAR_TRANSITION,
+            }}
           >
             <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', color: 'secondary.contrastText', fontSize: '0.9rem' }}>
               {avatarSeed}
@@ -77,6 +87,8 @@ export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
             py: 0.5,
             borderRadius: 1,
             bgcolor: 'action.hover',
+            minHeight: 50,
+            transition: SIDEBAR_TRANSITION,
           }}
         >
           <Avatar sx={{ width: 28, height: 28, bgcolor: 'secondary.main', color: 'secondary.contrastText', fontSize: '0.85rem' }}>

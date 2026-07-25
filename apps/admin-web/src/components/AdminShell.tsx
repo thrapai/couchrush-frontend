@@ -10,6 +10,7 @@ import { AdminTopBar } from './AdminTopBar';
 
 const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 88;
+const SIDEBAR_TRANSITION = 'width 220ms cubic-bezier(0.2, 0, 0, 1)';
 
 export function AdminShell() {
   const { user, logout } = useAuth();
@@ -87,12 +88,12 @@ export function AdminShell() {
           display: { xs: 'none', md: 'block' },
           width: desktopSidebarOpen ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH,
           flexShrink: 0,
-          transition: (theme) => theme.transitions.create('width'),
+          transition: SIDEBAR_TRANSITION,
           '& .MuiDrawer-paper': {
             width: desktopSidebarOpen ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH,
             boxSizing: 'border-box',
             overflowX: 'hidden',
-            transition: (theme) => theme.transitions.create('width'),
+            transition: SIDEBAR_TRANSITION,
           },
         }}
       >
