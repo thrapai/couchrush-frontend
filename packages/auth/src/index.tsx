@@ -2,6 +2,7 @@ import {
   ApiClient,
   ApiError,
   type ApiClientOptions,
+  type CurrentUserProfileResponse,
   type CurrentUserResponse,
   type LoginRequest,
 } from '@couchrush/api-client';
@@ -37,6 +38,24 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.';
 export const AUTH_ME_QUERY_KEY = ['auth', 'me'] as const;
+
+async function fetchAuthenticatedUser(client: ApiClient): Promise<CurrentUserResponse> {
+  const [authUser, profile] = await Promise.all([
+    client.getCurrentUser(),
+    client.getCurrentUserProfile().catch((error: unknown) => {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        throw error;
+      }
+
+      return null as CurrentUserProfileResponse | null;
+    }),
+  ]);
+
+  return {
+    ...authUser,
+    display_name: profile?.display_name ?? null,
+  };
+}
 
 export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) {
   const queryClient = useQueryClient();
@@ -117,7 +136,7 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
         getAccessToken: () => token,
       });
 
-      return tokenClient.getCurrentUser();
+      return fetchAuthenticatedUser(tokenClient);
     },
     retry: false,
     refetchOnWindowFocus: false,
@@ -137,7 +156,7 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
         ...apiClientOptions,
         getAccessToken: () => token,
       });
-      const currentUser = await tokenClient.getCurrentUser();
+      const currentUser = await fetchAuthenticatedUser(tokenClient);
 
       queryClient.setQueryData(AUTH_ME_QUERY_KEY, currentUser);
       await queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY });

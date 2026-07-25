@@ -201,7 +201,8 @@ describe('admin portal shell', () => {
     expect(await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Users/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Roles & Permissions/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/switch to /i)).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Open user menu'));
+    expect(await screen.findByRole('menuitem', { name: /Switch to light mode/i })).toBeInTheDocument();
   });
 
   it('shows a loading state while the session is being restored', async () => {

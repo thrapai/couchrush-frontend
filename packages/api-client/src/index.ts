@@ -20,9 +20,21 @@ export interface AccessTokenResponse {
 export interface CurrentUserResponse {
   id: string;
   email: string;
+  display_name?: string | null;
   is_active: boolean;
   roles: string[];
   permissions: string[];
+}
+
+export interface CurrentUserProfileResponse {
+  id: string;
+  email: string;
+  display_name: string | null;
+  is_active: boolean;
+  roles: string[];
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
 }
 
 export interface RegisteredUserResponse {
@@ -171,6 +183,13 @@ export class ApiClient {
   async getCurrentUser(): Promise<CurrentUserResponse> {
     return this.request<CurrentUserResponse>({
       path: '/api/auth/me',
+      authenticated: true,
+    });
+  }
+
+  async getCurrentUserProfile(): Promise<CurrentUserProfileResponse> {
+    return this.request<CurrentUserProfileResponse>({
+      path: '/api/users/me',
       authenticated: true,
     });
   }
