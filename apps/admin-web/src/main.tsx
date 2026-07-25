@@ -1,14 +1,12 @@
-import { CssBaseline, ThemeProvider } from '@mui/material';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { CouchRushThemeProvider } from '@couchrush/theme';
 import { App } from './App';
-import { theme } from '@couchrush/theme';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <CouchRushThemeProvider defaultMode="dark">
       <App />
-    </ThemeProvider>
+    </CouchRushThemeProvider>
   </StrictMode>,
 );

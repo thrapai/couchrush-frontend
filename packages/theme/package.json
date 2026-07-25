@@ -1,8 +1,11 @@
 {
   "name": "@couchrush/theme",
+  "version": "0.0.1",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": "./src/index.ts"
   },
@@ -12,12 +15,22 @@
     "typecheck": "tsc --noEmit",
     "test": "echo \"No tests configured\""
   },
+  "peerDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/material": "^9.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "dependencies": {
-    "@mui/material": "^7.2.0"
+    "@fontsource/bungee": "^5.2.6",
+    "@fontsource/inter": "^5.2.6"
   },
   "devDependencies": {
     "@couchrush/eslint-config": "workspace:*",
     "@couchrush/typescript-config": "workspace:*",
+    "@types/react": "^19.1.8",
     "eslint": "^9.31.0",
     "typescript": "^5.8.3"
   }
