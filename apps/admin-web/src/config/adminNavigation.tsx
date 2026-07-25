@@ -11,11 +11,6 @@ import SportsEsportsRounded from '@mui/icons-material/SportsEsportsRounded';
 import TranslateRounded from '@mui/icons-material/TranslateRounded';
 import type { ReactNode } from 'react';
 
-export interface AdminBreadcrumb {
-  label: string;
-  to?: string;
-}
-
 export interface AdminNavItem {
   id: string;
   label: string;
@@ -29,11 +24,6 @@ export interface AdminNavItem {
 export interface AdminNavSection {
   label: string;
   items: AdminNavItem[];
-}
-
-export interface AdminRouteMeta {
-  title: string;
-  breadcrumbs: AdminBreadcrumb[];
 }
 
 export const adminNavigationSections: AdminNavSection[] = [
@@ -143,42 +133,10 @@ export const adminNavigationSections: AdminNavSection[] = [
   },
 ];
 
-const routeMetaByPath: Record<string, AdminRouteMeta> = {
-  '/admin': {
-    title: 'Overview',
-    breadcrumbs: [{ label: 'Admin' }],
-  },
-  '/admin/users': {
-    title: 'Users',
-    breadcrumbs: [
-      { label: 'Admin', to: '/admin' },
-      { label: 'Users' },
-    ],
-  },
-  '/admin/access': {
-    title: 'Roles & Permissions',
-    breadcrumbs: [
-      { label: 'Admin', to: '/admin' },
-      { label: 'Roles & Permissions' },
-    ],
-  },
-  '/admin/profile': {
-    title: 'My Profile',
-    breadcrumbs: [
-      { label: 'Admin', to: '/admin' },
-      { label: 'My Profile' },
-    ],
-  },
-};
-
 export function hasAnyPermission(userPermissions: string[], requiredAnyPermissions?: string[]) {
   if (!requiredAnyPermissions || requiredAnyPermissions.length === 0) {
     return true;
   }
 
   return requiredAnyPermissions.some((permission) => userPermissions.includes(permission));
-}
-
-export function getAdminRouteMeta(pathname: string): AdminRouteMeta {
-  return routeMetaByPath[pathname] ?? routeMetaByPath['/admin'];
 }
