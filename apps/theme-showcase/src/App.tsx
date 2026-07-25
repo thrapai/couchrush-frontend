@@ -28,7 +28,6 @@ import { NavigationSection } from './sections/NavigationSection';
 import { SelectionControlsSection } from './sections/SelectionControlsSection';
 import { ThemeTokensSection } from './sections/ThemeTokensSection';
 import { TypographySection } from './sections/TypographySection';
-import logoSrc from '../../../logo.png';
 
 const sectionLinks = [
   ['theme-tokens', 'Tokens'],
@@ -63,7 +62,7 @@ export function App() {
           <Box sx={{ minWidth: 0 }}>
             <Box
               component="img"
-              src={logoSrc}
+              src="/logo.png"
               alt="Couchrush"
               sx={{ display: 'block', width: 156, maxWidth: '100%', height: 'auto', mb: 2 }}
             />
@@ -120,7 +119,7 @@ export function App() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
             <Box
               component="img"
-              src={logoSrc}
+              src="/logo.png"
               alt="Couchrush"
               sx={{ display: 'block', width: 112, maxWidth: '100%', height: 'auto', flexShrink: 0 }}
             />

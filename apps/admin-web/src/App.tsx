@@ -23,7 +23,6 @@ import { ColorModeToggle } from '@couchrush/theme';
 import { ApiError, type ApiClientOptions } from '@couchrush/api-client';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import logoSrc from '../../../logo.png';
 
 const REMEMBER_EMAIL_KEY = 'couchrush.admin.remember_email';
 const REMEMBER_EMAIL_ENABLED_KEY = 'couchrush.admin.remember_email.enabled';
@@ -50,7 +49,7 @@ function PageShell() {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 2 }}>
         <Box
           component="img"
-          src={logoSrc}
+          src="/logo.png"
           alt="Couchrush"
           sx={{ display: 'block', width: 144, maxWidth: '100%', height: 'auto' }}
         />
