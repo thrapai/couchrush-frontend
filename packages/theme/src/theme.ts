@@ -610,12 +610,21 @@ export const couchRushTheme = createTheme({
     MuiTooltip: {
       defaultProps: {
         arrow: true,
+        enterDelay: 250,
       },
       styleOverrides: {
         tooltip: {
-          borderRadius: 9,
-          fontSize: '0.78rem',
-          fontWeight: 700,
+          borderRadius: 8,
+          padding: '6px 8px',
+          fontSize: '0.72rem',
+          lineHeight: 1.2,
+          fontWeight: 600,
+          backgroundColor: 'color-mix(in srgb, var(--couchrush-palette-surfaceRaised), black 12%)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.24)',
+          maxWidth: 220,
+        },
+        arrow: {
+          color: 'color-mix(in srgb, var(--couchrush-palette-surfaceRaised), black 12%)',
         },
       },
     },

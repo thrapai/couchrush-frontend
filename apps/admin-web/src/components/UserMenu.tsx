@@ -55,8 +55,14 @@ export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
     <>
       {collapsed ? (
         <Tooltip title="Open user menu">
-          <IconButton aria-label="Open user menu" onClick={(event) => setAnchorEl(event.currentTarget)} color="inherit" size="small">
-            <Avatar sx={{ width: 36, height: 36, bgcolor: 'secondary.main', color: 'secondary.contrastText' }}>
+          <IconButton
+            aria-label="Open user menu"
+            onClick={(event) => setAnchorEl(event.currentTarget)}
+            color="inherit"
+            size="small"
+            sx={{ borderRadius: 1, p: 0.5, mx: 'auto', display: 'flex' }}
+          >
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', color: 'secondary.contrastText', fontSize: '0.9rem' }}>
               {avatarSeed}
             </Avatar>
           </IconButton>
@@ -66,39 +72,44 @@ export function UserMenu({ user, onLogout, collapsed = false }: UserMenuProps) {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 1.5,
-            px: 1.5,
-            py: 1.25,
-            borderRadius: 3,
+            gap: 1,
+            px: 0.875,
+            py: 0.5,
+            borderRadius: 1,
             bgcolor: 'action.hover',
           }}
         >
-          <Avatar sx={{ width: 40, height: 40, bgcolor: 'secondary.main', color: 'secondary.contrastText' }}>
+          <Avatar sx={{ width: 28, height: 28, bgcolor: 'secondary.main', color: 'secondary.contrastText', fontSize: '0.85rem' }}>
             {avatarSeed}
           </Avatar>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography variant="subtitle2" noWrap>
               {displayName}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" noWrap>
               {primaryRole}
             </Typography>
           </Box>
           <Tooltip title="Open user menu">
-            <IconButton aria-label="Open user menu" onClick={(event) => setAnchorEl(event.currentTarget)} color="inherit" size="small">
+            <IconButton aria-label="Open user menu" onClick={(event) => setAnchorEl(event.currentTarget)} color="inherit" size="small" sx={{ p: 0.5, borderRadius: 1 }}>
               <MoreHorizRounded fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
       )}
       <Menu anchorEl={anchorEl} open={isOpen} onClose={() => setAnchorEl(null)} keepMounted>
-        <Box sx={{ px: 2, py: 1.5, maxWidth: 260 }}>
-          <Typography variant="subtitle2" noWrap>
-            {displayName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap>
-            {primaryRole}
-          </Typography>
+        <Box sx={{ px: 2, py: 1.5, maxWidth: 260, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Avatar sx={{ width: 28, height: 28, bgcolor: 'secondary.main', color: 'secondary.contrastText', fontSize: '0.8rem' }}>
+            {avatarSeed}
+          </Avatar>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle2" noWrap>
+              {displayName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {primaryRole}
+            </Typography>
+          </Box>
         </Box>
         <Divider />
         <MenuItem onClick={() => setMode(nextMode)}>

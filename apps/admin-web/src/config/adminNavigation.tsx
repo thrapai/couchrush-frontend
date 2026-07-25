@@ -5,7 +5,6 @@ import DashboardRounded from '@mui/icons-material/DashboardRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
 import ManageAccountsRounded from '@mui/icons-material/ManageAccountsRounded';
 import MeetingRoomRounded from '@mui/icons-material/MeetingRoomRounded';
-import PersonRounded from '@mui/icons-material/PersonRounded';
 import QuestionAnswerRounded from '@mui/icons-material/QuestionAnswerRounded';
 import SettingsRounded from '@mui/icons-material/SettingsRounded';
 import SportsEsportsRounded from '@mui/icons-material/SportsEsportsRounded';
@@ -68,18 +67,6 @@ export const adminNavigationSections: AdminNavSection[] = [
         to: '/admin/access',
         requiredAnyPermissions: ['roles:manage'],
         description: 'Role assignment controls',
-      },
-    ],
-  },
-  {
-    label: 'Account',
-    items: [
-      {
-        id: 'my-profile',
-        label: 'My Profile',
-        icon: <PersonRounded fontSize="small" />,
-        to: '/admin/profile',
-        description: 'Your account details',
       },
     ],
   },

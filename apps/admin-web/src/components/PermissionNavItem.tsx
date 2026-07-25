@@ -26,7 +26,29 @@ export function PermissionNavItem({ item, permissions, collapsed = false, onNavi
           <ListItemText
             primary={item.label}
             secondary={item.description}
-            slotProps={{ primary: { variant: 'body2' }, secondary: { variant: 'caption' } }}
+            slotProps={{
+              primary: {
+                variant: 'body2',
+                noWrap: true,
+              },
+              secondary: {
+                variant: 'caption',
+                noWrap: true,
+                title: item.description,
+              },
+            }}
+            sx={{
+              my: 0,
+              '& .MuiListItemText-primary': {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              },
+              '& .MuiListItemText-secondary': {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              },
+            }}
           />
           {item.comingSoon ? (
             <Chip size="small" label="Soon" color="default" />
@@ -45,7 +67,15 @@ export function PermissionNavItem({ item, permissions, collapsed = false, onNavi
       <Tooltip title={item.label} placement="right">
         <ListItemButton
           disabled
-          sx={{ borderRadius: 2, justifyContent: collapsed ? 'center' : 'flex-start', px: collapsed ? 1.5 : 2 }}
+          sx={{
+            minHeight: collapsed ? 42 : 50,
+            width: collapsed ? 44 : 'auto',
+            borderRadius: 1,
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            px: collapsed ? 0 : 2,
+            alignItems: 'center',
+            mx: collapsed ? 'auto' : 0,
+          }}
         >
           {content}
         </ListItemButton>
@@ -60,7 +90,15 @@ export function PermissionNavItem({ item, permissions, collapsed = false, onNavi
         to={item.to}
         selected={isSelected}
         onClick={onNavigate}
-        sx={{ borderRadius: 2, justifyContent: collapsed ? 'center' : 'flex-start', px: collapsed ? 1.5 : 2 }}
+        sx={{
+          minHeight: collapsed ? 42 : 50,
+          width: collapsed ? 44 : 'auto',
+          borderRadius: 1,
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          px: collapsed ? 0 : 2,
+          alignItems: 'center',
+          mx: collapsed ? 'auto' : 0,
+        }}
       >
         {content}
       </ListItemButton>
