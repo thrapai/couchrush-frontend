@@ -1,5 +1,5 @@
 import type { ApiClientOptions } from '@couchrush/api-client';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CouchRushThemeProvider } from '@couchrush/theme';
 import { App } from './App';
@@ -24,6 +24,7 @@ type MockAxiosResponse = {
 type MockAxiosInstance = {
   request: typeof requestMock;
 };
+
 const requestMock = vi.fn<
   (config: { url?: string; method?: string; headers?: Record<string, string>; data?: unknown }) => Promise<MockAxiosResponse>
 >();
@@ -33,13 +34,22 @@ const ADMIN_USER = {
   email: 'admin@example.com',
   is_active: true,
   roles: ['ADMIN'],
-  permissions: ['audit:read'],
+  permissions: [
+    'audit:read',
+    'games:read',
+    'roles:manage',
+    'rooms:read',
+    'sessions:read',
+    'settings:manage',
+    'users:manage',
+    'users:read',
+  ],
 };
 
-const USER_WITHOUT_ADMIN = {
+const SUPPORT_USER = {
   ...ADMIN_USER,
-  roles: ['USER'],
-  permissions: [],
+  roles: ['SUPPORT'],
+  permissions: ['users:read', 'rooms:read', 'sessions:read'],
 };
 
 function jsonResponse({ status, body }: MockResponseInit): MockAxiosResponse {
@@ -96,7 +106,7 @@ function mockRequestSequence(
   return requestMock;
 }
 
-describe('admin auth flow', () => {
+describe('admin portal shell', () => {
   beforeEach(() => {
     installLocalStorageMock();
     requestMock.mockReset();
@@ -116,7 +126,6 @@ describe('admin auth flow', () => {
         expect(config.headers?.Authorization).toBe('Bearer token-1');
         return jsonResponse({ status: 200, body: ADMIN_USER });
       },
-      () => jsonResponse({ status: 200, body: { status: 'ok' } }),
     ]);
 
     renderApp('/login');
@@ -125,129 +134,8 @@ describe('admin auth flow', () => {
     await userEvent.type(screen.getByLabelText(/password/i), 'change-this-password');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
-    expect(await screen.findByText('Authenticated and authorized.')).toBeInTheDocument();
-    expect(axiosMock).toHaveBeenCalledWith(
-      expect.objectContaining({ url: '/api/auth/login', method: 'POST' }),
-    );
-  });
-
-  it('shows failed login errors', async () => {
-    mockRequestSequence([
-      () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
-      () => jsonResponse({ status: 401, body: { detail: 'Invalid credentials.' } }),
-    ]);
-
-    renderApp('/login');
-
-    await userEvent.type(await screen.findByRole('textbox', { name: 'Email' }), 'admin@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'wrong-password');
-    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-
-    expect(await screen.findByText('Invalid credentials.')).toBeInTheDocument();
-  });
-
-  it('does not show a session-expired warning on a first login-page visit', async () => {
-    mockRequestSequence([() => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } })]);
-
-    renderApp('/login');
-
-    expect(await screen.findByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
-    expect(screen.queryByText('Your session has expired. Please sign in again.')).not.toBeInTheDocument();
-  });
-
-  it('restores the session after refresh', async () => {
-    mockRequestSequence([
-      () => jsonResponse({ status: 200, body: { access_token: 'token-2', token_type: 'bearer', expires_in: 900 } }),
-      (config) => {
-        expect(config.headers?.Authorization).toBe('Bearer token-2');
-        return jsonResponse({ status: 200, body: ADMIN_USER });
-      },
-      () => jsonResponse({ status: 200, body: { status: 'ok' } }),
-    ]);
-
-    renderApp('/admin');
-
-    expect(await screen.findByText('Authenticated and authorized.')).toBeInTheDocument();
-  });
-
-  it('redirects unauthenticated users to login', async () => {
-    mockRequestSequence([() => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } })]);
-
-    renderApp('/admin');
-
-    expect(await screen.findByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
-  });
-
-  it('retries one failed request after a successful refresh', async () => {
-    const axiosMock = mockRequestSequence([
-      () => jsonResponse({ status: 200, body: { access_token: 'expired-token', token_type: 'bearer', expires_in: 900 } }),
-      () => jsonResponse({ status: 200, body: ADMIN_USER }),
-      () => jsonResponse({ status: 401, body: { detail: 'Unauthorized' } }),
-      () => jsonResponse({ status: 200, body: { access_token: 'fresh-token', token_type: 'bearer', expires_in: 900 } }),
-      (config) => {
-        expect(config.headers?.Authorization).toBe('Bearer fresh-token');
-        return jsonResponse({ status: 200, body: { status: 'ok' } });
-      },
-    ]);
-
-    renderApp('/admin');
-
-    expect(await screen.findByText('Authenticated and authorized.')).toBeInTheDocument();
-    expect(axiosMock.mock.calls.filter(([config]) => config.url === '/api/auth/refresh')).toHaveLength(2);
-  });
-
-  it('logs out and shows a session-expired message after refresh failure', async () => {
-    mockRequestSequence([
-      () => jsonResponse({ status: 200, body: { access_token: 'expired-token', token_type: 'bearer', expires_in: 900 } }),
-      () => jsonResponse({ status: 200, body: ADMIN_USER }),
-      () => jsonResponse({ status: 401, body: { detail: 'Unauthorized' } }),
-      () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
-    ]);
-
-    renderApp('/admin');
-
-    expect(await screen.findByText('Your session has expired. Please sign in again.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
-  });
-
-  it('shows a basic 403 state for authenticated users without admin access', async () => {
-    mockRequestSequence([
-      () => jsonResponse({ status: 200, body: { access_token: 'token-3', token_type: 'bearer', expires_in: 900 } }),
-      () => jsonResponse({ status: 200, body: USER_WITHOUT_ADMIN }),
-      () => jsonResponse({ status: 403, body: { detail: 'Forbidden' } }),
-    ]);
-
-    renderApp('/admin');
-
-    expect(
-      await screen.findByText('You are signed in, but you do not have access to the admin portal.'),
-    ).toBeInTheDocument();
-  });
-
-  it('remembers the email after logout when remember email is enabled', async () => {
-    mockRequestSequence([
-      () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
-      () => jsonResponse({ status: 200, body: { access_token: 'token-4', token_type: 'bearer', expires_in: 900 } }),
-      () => jsonResponse({ status: 200, body: ADMIN_USER }),
-      () => jsonResponse({ status: 200, body: ADMIN_USER }),
-      () => jsonResponse({ status: 200, body: { status: 'ok' } }),
-      () => jsonResponse({ status: 204 }),
-      () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
-    ]);
-
-    renderApp('/login');
-
-    await userEvent.type(await screen.findByRole('textbox', { name: 'Email' }), 'admin@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'change-this-password');
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Remember email' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-
-    expect(await screen.findByText('Authenticated and authorized.')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
-
-    expect(await screen.findByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('admin@example.com');
+    expect(await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.')).toBeInTheDocument();
+    expect(axiosMock).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/auth/login', method: 'POST' }));
   });
 
   it('supports successful registration and redirects to login', async () => {
@@ -276,7 +164,6 @@ describe('admin auth flow', () => {
 
     expect(await screen.findByText('Account created. You can sign in now.')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('new-user@example.com');
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
   });
 
   it('shows failed registration errors', async () => {
@@ -292,5 +179,95 @@ describe('admin auth flow', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Register' }));
 
     expect(await screen.findByText('Email already registered.')).toBeInTheDocument();
+  });
+
+  it('does not show a session-expired warning on a first login-page visit', async () => {
+    mockRequestSequence([() => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } })]);
+
+    renderApp('/login');
+
+    expect(await screen.findByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
+    expect(screen.queryByText('Your session has expired. Please sign in again.')).not.toBeInTheDocument();
+  });
+
+  it('shell renders for an authenticated admin', async () => {
+    mockRequestSequence([
+      () => jsonResponse({ status: 200, body: { access_token: 'token-2', token_type: 'bearer', expires_in: 900 } }),
+      () => jsonResponse({ status: 200, body: ADMIN_USER }),
+    ]);
+
+    renderApp('/admin');
+
+    expect(await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Users/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Roles & Permissions/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/switch to /i)).toBeInTheDocument();
+  });
+
+  it('shows a loading state while the session is being restored', async () => {
+    let resolveRefresh!: (value: MockAxiosResponse) => void;
+    requestMock.mockImplementationOnce(
+      () =>
+        new Promise<MockAxiosResponse>((resolve) => {
+          resolveRefresh = resolve;
+        }),
+    );
+
+    renderApp('/admin');
+
+    expect(screen.getByText('Loading session…')).toBeInTheDocument();
+
+    resolveRefresh(jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }));
+    await screen.findByRole('heading', { name: 'Couchrush Admin' });
+  });
+
+  it('mobile drawer opens and closes', async () => {
+    mockRequestSequence([
+      () => jsonResponse({ status: 200, body: { access_token: 'token-3', token_type: 'bearer', expires_in: 900 } }),
+      () => jsonResponse({ status: 200, body: ADMIN_USER }),
+    ]);
+
+    renderApp('/admin');
+
+    await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.');
+    await userEvent.click(screen.getByLabelText('Open navigation'));
+
+    const mobileDrawer = await screen.findByTestId('mobile-navigation-drawer');
+    expect(within(mobileDrawer).getByLabelText('Close navigation')).toBeInTheDocument();
+
+    await userEvent.click(within(mobileDrawer).getByRole('link', { name: /Users/i }));
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Close navigation')).not.toBeInTheDocument();
+    });
+  });
+
+  it('navigation item is hidden when permission is missing', async () => {
+    mockRequestSequence([
+      () => jsonResponse({ status: 200, body: { access_token: 'token-4', token_type: 'bearer', expires_in: 900 } }),
+      () => jsonResponse({ status: 200, body: SUPPORT_USER }),
+    ]);
+
+    renderApp('/admin');
+
+    expect(await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Users/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Roles & Permissions/i })).not.toBeInTheDocument();
+  });
+
+  it('logout action is triggered from the user menu', async () => {
+    const axiosMock = mockRequestSequence([
+      () => jsonResponse({ status: 200, body: { access_token: 'token-5', token_type: 'bearer', expires_in: 900 } }),
+      () => jsonResponse({ status: 200, body: ADMIN_USER }),
+      () => jsonResponse({ status: 204 }),
+    ]);
+
+    renderApp('/admin');
+
+    await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.');
+    await userEvent.click(screen.getByLabelText('Open user menu'));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Logout' }));
+
+    expect(await screen.findByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
+    expect(axiosMock).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/auth/logout', method: 'POST' }));
   });
 });

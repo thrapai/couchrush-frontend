@@ -11,7 +11,6 @@ import {
   useQueryClient,
   type QueryClient,
   type UseMutationResult,
-  type UseQueryResult,
 } from '@tanstack/react-query';
 import { createContext, type PropsWithChildren, useContext, useMemo, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
@@ -41,7 +40,6 @@ export const AUTH_ME_QUERY_KEY = ['auth', 'me'] as const;
 
 export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) {
   const queryClient = useQueryClient();
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
   const accessTokenRef = useRef<string | null>(null);
   const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
@@ -52,7 +50,6 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
 
   function clearAuthState(queryClientInstance: QueryClient, sessionExpired: boolean) {
     accessTokenRef.current = null;
-    setAccessToken(null);
     setIsSessionExpired(sessionExpired);
     didAttemptRestoreRef.current = true;
     queryClientInstance.setQueryData(AUTH_ME_QUERY_KEY, null);
@@ -67,7 +64,6 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
       try {
         const refreshed = await refreshClient.refresh();
         accessTokenRef.current = refreshed.access_token;
-        setAccessToken(refreshed.access_token);
         setIsSessionExpired(false);
         hadAuthenticatedSessionRef.current = true;
         return refreshed.access_token;
@@ -134,7 +130,6 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
 
       didAttemptRestoreRef.current = true;
       accessTokenRef.current = token;
-      setAccessToken(token);
       setIsSessionExpired(false);
       hadAuthenticatedSessionRef.current = true;
 
@@ -149,7 +144,6 @@ export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) 
     },
     onError: () => {
       accessTokenRef.current = null;
-      setAccessToken(null);
       setIsSessionExpired(false);
     },
   });
