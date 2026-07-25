@@ -36,7 +36,6 @@ interface AuthProviderProps extends PropsWithChildren {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.';
 export const AUTH_ME_QUERY_KEY = ['auth', 'me'] as const;
 
 async function fetchAuthenticatedUser(client: ApiClient): Promise<CurrentUserResponse> {
@@ -249,8 +248,4 @@ export function RedirectIfAuthenticated() {
   }
 
   return <Outlet />;
-}
-
-export function getSessionExpiredMessage(isSessionExpired: boolean): string | null {
-  return isSessionExpired ? SESSION_EXPIRED_MESSAGE : null;
 }

@@ -2,7 +2,6 @@
   "admin": {
     "navigation": {
       "overview": "Επισκόπηση",
-      "accessManagement": "ΔΙΑΧΕΙΡΙΣΗ ΠΡΟΣΒΑΣΗΣ",
       "users": "Χρήστες",
       "rolesPermissions": "Ρόλοι & Δικαιώματα",
       "profile": "Το προφίλ μου",

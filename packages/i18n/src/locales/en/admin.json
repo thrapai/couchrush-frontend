@@ -2,7 +2,6 @@
   "admin": {
     "navigation": {
       "overview": "Overview",
-      "accessManagement": "Access Management",
       "users": "Users",
       "rolesPermissions": "Roles & Permissions",
       "profile": "My Profile",
