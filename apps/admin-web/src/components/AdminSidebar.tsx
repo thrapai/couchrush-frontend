@@ -184,7 +184,22 @@ export function AdminSidebar({
           py: 1.5,
           overflowY: 'auto',
           flex: 1,
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'color-mix(in srgb, var(--couchrush-palette-primary-main), transparent 35%) transparent',
           transition: SIDEBAR_TRANSITION,
+          '&::-webkit-scrollbar': {
+            width: 6,
+          },
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            borderRadius: 999,
+            backgroundColor: 'color-mix(in srgb, var(--couchrush-palette-primary-main), transparent 35%)',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: 'var(--couchrush-palette-primary-main)',
+          },
         }}
       >
         {collapsed ? (

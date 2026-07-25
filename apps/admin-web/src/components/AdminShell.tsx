@@ -1,12 +1,10 @@
-import { Box, Drawer } from '@mui/material';
+import { Box, Drawer, IconButton, Tooltip } from '@mui/material';
 import { getApiErrorMessage } from '@couchrush/api-client';
 import { useAuth } from '@couchrush/auth';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { getAdminRouteMeta } from '../config/adminNavigation';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useGlobalSnackbar } from '../providers/globalSnackbarContext';
 import { AdminSidebar } from './AdminSidebar';
-import { AdminTopBar } from './AdminTopBar';
 
 const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 88;
@@ -15,16 +13,9 @@ const SIDEBAR_TRANSITION = 'width 220ms cubic-bezier(0.2, 0, 0, 1)';
 export function AdminShell() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const { showSnackbar } = useGlobalSnackbar();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-
-  const routeMeta = getAdminRouteMeta(location.pathname);
-
-  useEffect(() => {
-    document.title = `${routeMeta.title} | Couchrush Admin`;
-  }, [routeMeta.title]);
 
   async function handleLogout() {
     try {
@@ -41,19 +32,6 @@ export function AdminShell() {
 
   if (!user) {
     return null;
-  }
-
-  function handleOpenNavigation() {
-    if (
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(min-width: 900px)').matches
-    ) {
-      setDesktopSidebarOpen((current) => !current);
-      return;
-    }
-
-    setMobileDrawerOpen(true);
   }
 
   return (
@@ -107,12 +85,22 @@ export function AdminShell() {
       </Drawer>
 
       <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-        <AdminTopBar
-          title={routeMeta.title}
-          breadcrumbs={routeMeta.breadcrumbs}
-          onOpenNavigation={handleOpenNavigation}
-        />
         <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 3 }, minWidth: 0 }}>
+          <Tooltip title="Open navigation">
+            <IconButton
+              aria-label="Open navigation"
+              onClick={() => setMobileDrawerOpen(true)}
+              size="small"
+              sx={{
+                display: { xs: 'inline-flex', md: 'none' },
+                mb: 2,
+                borderRadius: 1,
+                p: 0.5,
+              }}
+            >
+              <Box component="img" src="/logo.png" alt="Couchrush" sx={{ display: 'block', width: 32, height: 'auto' }} />
+            </IconButton>
+          </Tooltip>
           <Outlet />
         </Box>
       </Box>
