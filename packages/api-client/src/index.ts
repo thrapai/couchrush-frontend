@@ -37,6 +37,32 @@ export interface CurrentUserProfileResponse {
   last_login_at: string | null;
 }
 
+export interface AdminUserSummary {
+  id: string;
+  email: string;
+  display_name: string | null;
+  is_active: boolean;
+  roles: string[];
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+}
+
+export interface PaginatedUsersResponse {
+  items: AdminUserSummary[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
+export interface ListAdminUsersRequest {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  role?: string;
+  is_active?: boolean;
+}
+
 export interface RegisteredUserResponse {
   id: string;
   email: string;
@@ -197,6 +223,20 @@ export class ApiClient {
   async checkAdminAccess(): Promise<{ status: string }> {
     return this.request<{ status: string }>({
       path: '/api/admin/audit-logs/access-check',
+      authenticated: true,
+    });
+  }
+
+  async listAdminUsers(params: ListAdminUsersRequest = {}): Promise<PaginatedUsersResponse> {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        query.set(key, String(value));
+      }
+    });
+
+    return this.request<PaginatedUsersResponse>({
+      path: `/api/admin/users${query.size ? `?${query.toString()}` : ''}`,
       authenticated: true,
     });
   }

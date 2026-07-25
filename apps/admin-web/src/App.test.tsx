@@ -32,6 +32,7 @@ const requestMock = vi.fn<
 const ADMIN_USER = {
   id: '11111111-1111-1111-1111-111111111111',
   email: 'admin@example.com',
+  display_name: 'Thomas',
   is_active: true,
   roles: ['ADMIN'],
   permissions: [
@@ -50,6 +51,23 @@ const SUPPORT_USER = {
   ...ADMIN_USER,
   roles: ['SUPPORT'],
   permissions: ['users:read', 'rooms:read', 'sessions:read'],
+};
+
+const NO_USERS_PERMISSION_USER = {
+  ...ADMIN_USER,
+  roles: ['VIEWER'],
+  permissions: ['rooms:read'],
+};
+
+const ADMIN_PROFILE = {
+  id: ADMIN_USER.id,
+  email: ADMIN_USER.email,
+  display_name: 'Thomas',
+  is_active: true,
+  roles: ADMIN_USER.roles,
+  created_at: '2026-07-25T12:00:00Z',
+  updated_at: '2026-07-25T12:10:00Z',
+  last_login_at: '2026-07-25T12:20:00Z',
 };
 
 function jsonResponse({ status, body }: MockResponseInit): MockAxiosResponse {
@@ -106,10 +124,41 @@ function mockRequestSequence(
   return requestMock;
 }
 
+function installDefaultApiMock() {
+  requestMock.mockImplementation(async (config) => {
+    if (config.url === '/api/auth/refresh') {
+      return jsonResponse({ status: 200, body: { access_token: 'token-default', token_type: 'bearer', expires_in: 900 } });
+    }
+
+    if (config.url === '/api/auth/me') {
+      return jsonResponse({ status: 200, body: ADMIN_USER });
+    }
+
+    if (config.url === '/api/users/me') {
+      return jsonResponse({ status: 200, body: ADMIN_PROFILE });
+    }
+
+    if (config.url === '/api/admin/users?page=1&page_size=1') {
+      return jsonResponse({ status: 200, body: { items: [], page: 1, page_size: 1, total: 42 } });
+    }
+
+    if (config.url === '/api/admin/users?page=1&page_size=1&is_active=true') {
+      return jsonResponse({ status: 200, body: { items: [], page: 1, page_size: 1, total: 37 } });
+    }
+
+    if (config.url === '/api/auth/logout') {
+      return jsonResponse({ status: 204 });
+    }
+
+    return jsonResponse({ status: 404, body: { detail: `Unhandled test URL: ${config.url ?? ''}` } });
+  });
+}
+
 describe('admin portal shell', () => {
   beforeEach(() => {
     installLocalStorageMock();
     requestMock.mockReset();
+    installDefaultApiMock();
     storage.delete(REMEMBER_EMAIL_KEY);
     storage.delete(REMEMBER_EMAIL_ENABLED_KEY);
   });
@@ -134,7 +183,7 @@ describe('admin portal shell', () => {
     await userEvent.type(screen.getByLabelText(/password/i), 'change-this-password');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
-    expect(await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome back, Thomas' })).toBeInTheDocument();
     expect(axiosMock).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/auth/login', method: 'POST' }));
   });
 
@@ -198,11 +247,63 @@ describe('admin portal shell', () => {
 
     renderApp('/admin');
 
-    expect(await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Users/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome back, Thomas' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Users/i }).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /Roles & Permissions/i })).toBeInTheDocument();
     await userEvent.click(screen.getByLabelText('Open user menu'));
     expect(await screen.findByRole('menuitem', { name: /Switch to light mode/i })).toBeInTheDocument();
+  });
+
+  it('renders authenticated user access details and dashboard metrics', async () => {
+    const axiosMock = mockRequestSequence([
+      () => jsonResponse({ status: 200, body: { access_token: 'token-dashboard', token_type: 'bearer', expires_in: 900 } }),
+      () => jsonResponse({ status: 200, body: ADMIN_USER }),
+      () => jsonResponse({ status: 200, body: ADMIN_PROFILE }),
+      () => jsonResponse({ status: 200, body: { items: [], page: 1, page_size: 1, total: 42 } }),
+      () => jsonResponse({ status: 200, body: { items: [], page: 1, page_size: 1, total: 37 } }),
+    ]);
+
+    renderApp('/admin');
+
+    expect(await screen.findByRole('heading', { name: 'Welcome back, Thomas' })).toBeInTheDocument();
+    expect(screen.getByText('ADMIN')).toBeInTheDocument();
+    expect(screen.getByText('8 permissions')).toBeInTheDocument();
+    expect(screen.getByText('users:read')).toBeInTheDocument();
+    expect(await screen.findByText('42')).toBeInTheDocument();
+    expect(await screen.findByText('37')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Manage users' })).toHaveAttribute('href', '/admin/users');
+    expect(screen.getByRole('link', { name: 'View my profile' })).toHaveAttribute('href', '/admin/profile');
+    expect(axiosMock).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/admin/users?page=1&page_size=1' }));
+    expect(axiosMock).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/admin/users?page=1&page_size=1&is_active=true' }));
+  });
+
+  it('shows unavailable user metrics and hides manage-users action without users:read', async () => {
+    mockRequestSequence([
+      () => jsonResponse({ status: 200, body: { access_token: 'token-no-users-read', token_type: 'bearer', expires_in: 900 } }),
+      () => jsonResponse({ status: 200, body: NO_USERS_PERMISSION_USER }),
+      () => jsonResponse({ status: 200, body: { ...ADMIN_PROFILE, roles: NO_USERS_PERMISSION_USER.roles } }),
+    ]);
+
+    renderApp('/admin');
+
+    expect(await screen.findByText('User metrics are unavailable because this account does not have users:read.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Manage users' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View my profile' })).toHaveAttribute('href', '/admin/profile');
+  });
+
+  it('renders a backend error state when user metrics fail', async () => {
+    mockRequestSequence([
+      () => jsonResponse({ status: 200, body: { access_token: 'token-metric-error', token_type: 'bearer', expires_in: 900 } }),
+      () => jsonResponse({ status: 200, body: ADMIN_USER }),
+      () => jsonResponse({ status: 200, body: ADMIN_PROFILE }),
+      () => jsonResponse({ status: 500, body: { detail: 'Metrics are unavailable.' } }),
+      () => jsonResponse({ status: 200, body: { items: [], page: 1, page_size: 1, total: 37 } }),
+    ]);
+
+    renderApp('/admin');
+
+    expect(await screen.findByText('Metrics are unavailable.')).toBeInTheDocument();
+    expect(screen.getByText('Unavailable')).toBeInTheDocument();
   });
 
   it('shows a loading state while the session is being restored', async () => {
@@ -230,7 +331,7 @@ describe('admin portal shell', () => {
 
     renderApp('/admin');
 
-    await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.');
+    await screen.findByRole('heading', { name: 'Welcome back, Thomas' });
     await userEvent.click(screen.getByLabelText('Open navigation'));
 
     const mobileDrawer = await screen.findByTestId('mobile-navigation-drawer');
@@ -250,8 +351,8 @@ describe('admin portal shell', () => {
 
     renderApp('/admin');
 
-    expect(await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Users/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome back, Thomas' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Users/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('link', { name: /Roles & Permissions/i })).not.toBeInTheDocument();
   });
 
@@ -259,12 +360,15 @@ describe('admin portal shell', () => {
     const axiosMock = mockRequestSequence([
       () => jsonResponse({ status: 200, body: { access_token: 'token-5', token_type: 'bearer', expires_in: 900 } }),
       () => jsonResponse({ status: 200, body: ADMIN_USER }),
+      () => jsonResponse({ status: 200, body: ADMIN_PROFILE }),
+      () => jsonResponse({ status: 200, body: { items: [], page: 1, page_size: 1, total: 42 } }),
+      () => jsonResponse({ status: 200, body: { items: [], page: 1, page_size: 1, total: 37 } }),
       () => jsonResponse({ status: 204 }),
     ]);
 
     renderApp('/admin');
 
-    await screen.findByText('This is the reusable admin shell landing page. Feature pages will be added in later milestones.');
+    await screen.findByRole('heading', { name: 'Welcome back, Thomas' });
     await userEvent.click(screen.getByLabelText('Open user menu'));
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Logout' }));
 

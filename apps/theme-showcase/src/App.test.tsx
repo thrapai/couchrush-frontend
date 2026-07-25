@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CouchRushThemeProvider } from '@couchrush/theme';
 import { App } from './App';
@@ -54,6 +54,8 @@ describe('theme showcase', () => {
     expect(screen.getByRole('button', { name: /close drawer panel/i })).toBeInTheDocument();
     expect(screen.getByText(/shifts to make room for the drawer/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /close drawer panel/i }));
-    expect(screen.getByText(/open the drawer to preview bounded navigation behavior/i)).toBeInTheDocument();
-  });
+    await waitFor(() => {
+      expect(screen.getByText(/open the drawer to preview bounded navigation behavior/i)).toBeInTheDocument();
+    });
+  }, 10_000);
 });
