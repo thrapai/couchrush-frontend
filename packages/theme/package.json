@@ -1,0 +1,24 @@
+{
+  "name": "@couchrush/theme",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No tests configured\""
+  },
+  "dependencies": {
+    "@mui/material": "^7.2.0"
+  },
+  "devDependencies": {
+    "@couchrush/eslint-config": "workspace:*",
+    "@couchrush/typescript-config": "workspace:*",
+    "eslint": "^9.31.0",
+    "typescript": "^5.8.3"
+  }
+}
