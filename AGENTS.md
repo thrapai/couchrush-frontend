@@ -46,3 +46,4 @@
 - Add accessible labels and keyboard support.
 - Reuse existing query keys, hooks, and layout patterns.
 - Run lint, typecheck, tests, and build before finishing.
+- Run `pnpm deadcode` before finishing. Do not suppress Knip findings without confirming they are intentional framework, generated-code, or dynamic-entry exceptions.
