@@ -209,6 +209,9 @@ export const couchRushTheme = createTheme({
         html: {
           minHeight: '100%',
           scrollBehavior: 'smooth',
+          scrollbarWidth: 'thin',
+          scrollbarColor:
+            'var(--couchrush-palette-primary-main) var(--couchrush-palette-surface)',
         },
         body: {
           minHeight: '100%',
@@ -218,12 +221,69 @@ export const couchRushTheme = createTheme({
             'radial-gradient(circle at 100% 10%, color-mix(in srgb, var(--couchrush-palette-secondary-main), transparent 87%), transparent 32rem)',
           ].join(', '),
           backgroundAttachment: 'fixed',
+          scrollbarWidth: 'thin',
+          scrollbarColor:
+            'var(--couchrush-palette-primary-main) var(--couchrush-palette-surface)',
         },
         '#root': {
           minHeight: '100vh',
         },
         '*': {
           boxSizing: 'border-box',
+        },
+        '*::-webkit-scrollbar': {
+          width: '12px',
+          height: '12px',
+        },
+        'html::-webkit-scrollbar, body::-webkit-scrollbar': {
+          width: '12px',
+          height: '12px',
+        },
+        '*::-webkit-scrollbar-button': {
+          display: 'none',
+          width: 0,
+          height: 0,
+          backgroundColor: 'transparent',
+        },
+        'html::-webkit-scrollbar-button, body::-webkit-scrollbar-button': {
+          display: 'none',
+          width: 0,
+          height: 0,
+          backgroundColor: 'transparent',
+        },
+        '*::-webkit-scrollbar-button:single-button': {
+          display: 'none',
+          width: 0,
+          height: 0,
+          backgroundColor: 'transparent',
+        },
+        'html::-webkit-scrollbar-button:single-button, body::-webkit-scrollbar-button:single-button': {
+          display: 'none',
+          width: 0,
+          height: 0,
+          backgroundColor: 'transparent',
+        },
+        '*::-webkit-scrollbar-track': {
+          backgroundColor: 'var(--couchrush-palette-surface)',
+        },
+        'html::-webkit-scrollbar-track, body::-webkit-scrollbar-track': {
+          backgroundColor: 'var(--couchrush-palette-surface)',
+        },
+        '*::-webkit-scrollbar-thumb': {
+          backgroundColor: 'var(--couchrush-palette-primary-main)',
+          borderRadius: '999px',
+          border: '3px solid var(--couchrush-palette-surface)',
+        },
+        'html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb': {
+          backgroundColor: 'var(--couchrush-palette-primary-main)',
+          borderRadius: '999px',
+          border: '3px solid var(--couchrush-palette-surface)',
+        },
+        '*::-webkit-scrollbar-thumb:hover': {
+          backgroundColor: 'var(--couchrush-palette-primary-dark)',
+        },
+        'html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover': {
+          backgroundColor: 'var(--couchrush-palette-primary-dark)',
         },
         '::selection': {
           backgroundColor: 'var(--couchrush-palette-primary-main)',
