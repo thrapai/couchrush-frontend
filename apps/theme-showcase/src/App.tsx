@@ -28,6 +28,7 @@ import { NavigationSection } from './sections/NavigationSection';
 import { SelectionControlsSection } from './sections/SelectionControlsSection';
 import { ThemeTokensSection } from './sections/ThemeTokensSection';
 import { TypographySection } from './sections/TypographySection';
+import logoSrc from '../../../logo.png';
 
 const sectionLinks = [
   ['theme-tokens', 'Tokens'],
@@ -60,6 +61,12 @@ export function App() {
       <Box sx={{ p: 2.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
           <Box sx={{ minWidth: 0 }}>
+            <Box
+              component="img"
+              src={logoSrc}
+              alt="Couchrush"
+              sx={{ display: 'block', width: 156, maxWidth: '100%', height: 'auto', mb: 2 }}
+            />
             <Typography variant="h4" sx={{ mb: 1 }}>
               CouchRush Theme Showcase
             </Typography>
@@ -110,9 +117,17 @@ export function App() {
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between', gap: 2 }}>
-          <Typography variant="h6" sx={{ minWidth: 0 }}>
-            Theme Showcase
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+            <Box
+              component="img"
+              src={logoSrc}
+              alt="Couchrush"
+              sx={{ display: 'block', width: 112, maxWidth: '100%', height: 'auto', flexShrink: 0 }}
+            />
+            <Typography variant="h6" sx={{ minWidth: 0 }}>
+              Theme Showcase
+            </Typography>
+          </Box>
           <IconButton
             aria-label="Open showcase drawer"
             onClick={() => setMobileDrawerOpen(true)}
