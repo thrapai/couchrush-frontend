@@ -24,6 +24,25 @@ import { ApiError, type ApiClientOptions } from '@couchrush/api-client';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
+const REMEMBER_EMAIL_KEY = 'couchrush.admin.remember_email';
+const REMEMBER_EMAIL_ENABLED_KEY = 'couchrush.admin.remember_email.enabled';
+
+function getRememberedEmail() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return window.localStorage.getItem(REMEMBER_EMAIL_KEY) ?? '';
+}
+
+function getRememberEmailEnabled() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return window.localStorage.getItem(REMEMBER_EMAIL_ENABLED_KEY) === 'true';
+}
+
 function PageShell() {
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
@@ -60,9 +79,9 @@ function LoginPage() {
   const { login, status, isSessionExpired, isLoggingIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => getRememberedEmail());
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => getRememberEmailEnabled());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const sessionExpiredMessage = getSessionExpiredMessage(isSessionExpired);
 
@@ -73,12 +92,30 @@ function LoginPage() {
     setErrorMessage(null);
 
     try {
+      if (rememberMe) {
+        window.localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+        window.localStorage.setItem(REMEMBER_EMAIL_ENABLED_KEY, 'true');
+      } else {
+        window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
+        window.localStorage.removeItem(REMEMBER_EMAIL_ENABLED_KEY);
+      }
+
       await login({ email, password });
       navigate(from, { replace: true });
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, 'Sign-in failed.'));
     }
   }
+
+  useEffect(() => {
+    if (rememberMe) {
+      window.localStorage.setItem(REMEMBER_EMAIL_ENABLED_KEY, 'true');
+      return;
+    }
+
+    window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    window.localStorage.removeItem(REMEMBER_EMAIL_ENABLED_KEY);
+  }, [rememberMe]);
 
   if (status === 'loading') {
     return <LoadingScreen />;

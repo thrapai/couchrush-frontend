@@ -4,6 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { CouchRushThemeProvider } from '@couchrush/theme';
 import { App } from './App';
 
+const REMEMBER_EMAIL_KEY = 'couchrush.admin.remember_email';
+const REMEMBER_EMAIL_ENABLED_KEY = 'couchrush.admin.remember_email.enabled';
+const storage = new Map<string, string>();
+
 type MockResponseInit = {
   status: number;
   body?: unknown;
@@ -48,6 +52,21 @@ function jsonResponse({ status, body }: MockResponseInit): MockAxiosResponse {
   };
 }
 
+function installLocalStorageMock() {
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, value);
+      },
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+    },
+  });
+}
+
 function renderApp(pathname: string) {
   window.history.pushState({}, '', pathname);
   const apiClientOptions: ApiClientOptions = {
@@ -79,7 +98,10 @@ function mockRequestSequence(
 
 describe('admin auth flow', () => {
   beforeEach(() => {
+    installLocalStorageMock();
     requestMock.mockReset();
+    storage.delete(REMEMBER_EMAIL_KEY);
+    storage.delete(REMEMBER_EMAIL_ENABLED_KEY);
   });
 
   it('supports successful login', async () => {
@@ -99,7 +121,7 @@ describe('admin auth flow', () => {
 
     renderApp('/login');
 
-    await userEvent.type(await screen.findByLabelText(/email/i), 'admin@example.com');
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Email' }), 'admin@example.com');
     await userEvent.type(screen.getByLabelText(/password/i), 'change-this-password');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
@@ -117,7 +139,7 @@ describe('admin auth flow', () => {
 
     renderApp('/login');
 
-    await userEvent.type(await screen.findByLabelText(/email/i), 'admin@example.com');
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Email' }), 'admin@example.com');
     await userEvent.type(screen.getByLabelText(/password/i), 'wrong-password');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
@@ -191,5 +213,31 @@ describe('admin auth flow', () => {
     expect(
       await screen.findByText('You are signed in, but you do not have access to the admin portal.'),
     ).toBeInTheDocument();
+  });
+
+  it('remembers the email after logout when remember email is enabled', async () => {
+    mockRequestSequence([
+      () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
+      () => jsonResponse({ status: 200, body: { access_token: 'token-4', token_type: 'bearer', expires_in: 900 } }),
+      () => jsonResponse({ status: 200, body: ADMIN_USER }),
+      () => jsonResponse({ status: 200, body: ADMIN_USER }),
+      () => jsonResponse({ status: 200, body: { status: 'ok' } }),
+      () => jsonResponse({ status: 204 }),
+      () => jsonResponse({ status: 401, body: { detail: 'Invalid refresh token.' } }),
+    ]);
+
+    renderApp('/login');
+
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Email' }), 'admin@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'change-this-password');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Remember email' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(await screen.findByText('Authenticated and authorized.')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+    expect(await screen.findByRole('heading', { name: 'Couchrush Admin' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue('admin@example.com');
   });
 });
