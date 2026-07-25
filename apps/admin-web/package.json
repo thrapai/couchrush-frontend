@@ -15,19 +15,19 @@
     "@couchrush/ui": "workspace:*",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^9.0.0",
+    "@mui/icons-material": "^9.2.0",
     "@mui/material": "^9.2.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@couchrush/eslint-config": "workspace:*",
     "@couchrush/typescript-config": "workspace:*",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
-    "eslint": "^9.31.0",
-    "typescript": "^5.8.3",
-    "vite": "^7.0.5"
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "eslint": "^10.7.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vite": "^8.1.5"
   }
 }

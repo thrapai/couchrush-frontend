@@ -1,5 +1,4 @@
-/// <reference path="./theme-augmentation.d.ts" />
-
+import type {} from './theme-augmentation';
 import { createTheme } from '@mui/material/styles';
 import { couchRushFonts, electricArcade } from './tokens';
 

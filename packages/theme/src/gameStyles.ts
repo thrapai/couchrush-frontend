@@ -1,5 +1,4 @@
-/// <reference path="./theme-augmentation.d.ts" />
-
+import type {} from './theme-augmentation';
 import type { SxProps, Theme } from '@mui/material/styles';
 
 export const hostScreenSx: SxProps<Theme> = {
