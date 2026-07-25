@@ -90,6 +90,10 @@ describe('admin auth flow', () => {
         expect(config.headers?.Authorization).toBe('Bearer token-1');
         return jsonResponse({ status: 200, body: ADMIN_USER });
       },
+      (config) => {
+        expect(config.headers?.Authorization).toBe('Bearer token-1');
+        return jsonResponse({ status: 200, body: ADMIN_USER });
+      },
       () => jsonResponse({ status: 200, body: { status: 'ok' } }),
     ]);
 

@@ -13,6 +13,7 @@
   "dependencies": {
     "@couchrush/api-client": "workspace:*",
     "@couchrush/auth": "workspace:*",
+    "@tanstack/react-query": "^5.90.2",
     "@couchrush/theme": "workspace:*",
     "@couchrush/ui": "workspace:*",
     "@emotion/react": "^11.14.0",

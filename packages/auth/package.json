@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@couchrush/api-client": "workspace:*",
+    "@tanstack/react-query": "^5.90.2",
     "react": "^19.2.8",
     "react-router-dom": "^7.9.2"
   },

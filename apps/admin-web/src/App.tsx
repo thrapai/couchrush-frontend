@@ -1,4 +1,5 @@
 import { Alert, Box, Button, CircularProgress, Container, Paper, TextField, Typography } from '@mui/material';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getApiErrorMessage } from '@couchrush/api-client';
 import {
   AuthProvider,
@@ -45,20 +46,18 @@ function LoadingScreen() {
 }
 
 function LoginPage() {
-  const { login, status, isSessionExpired } = useAuth();
+  const { login, status, isSessionExpired, isLoggingIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const sessionExpiredMessage = getSessionExpiredMessage(isSessionExpired);
 
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/admin';
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
@@ -66,8 +65,6 @@ function LoginPage() {
       navigate(from, { replace: true });
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, 'Sign-in failed.'));
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -90,7 +87,7 @@ function LoginPage() {
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          disabled={isSubmitting}
+          disabled={isLoggingIn}
           required
         />
         <TextField
@@ -99,11 +96,11 @@ function LoginPage() {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          disabled={isSubmitting}
+          disabled={isLoggingIn}
           required
         />
-        <Button type="submit" variant="contained" disabled={isSubmitting}>
-          {isSubmitting ? <CircularProgress color="inherit" size={20} /> : 'Sign in'}
+        <Button type="submit" variant="contained" disabled={isLoggingIn}>
+          {isLoggingIn ? <CircularProgress color="inherit" size={20} /> : 'Sign in'}
         </Button>
       </Box>
     </CenteredMessage>
@@ -207,16 +204,28 @@ interface AppProps {
 }
 
 export function App({ apiClientOptions: apiClientOptionsProp }: AppProps) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+          },
+        },
+      }),
+  );
   const apiClientOptions = useMemo(
     () => apiClientOptionsProp ?? { baseUrl: import.meta.env.VITE_API_BASE_URL ?? '' },
     [apiClientOptionsProp],
   );
 
   return (
-    <AuthProvider apiClientOptions={apiClientOptions}>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider apiClientOptions={apiClientOptions}>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

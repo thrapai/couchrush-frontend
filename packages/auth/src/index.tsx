@@ -1,19 +1,19 @@
 import {
-  type CurrentUserResponse,
   ApiClient,
   ApiError,
   type ApiClientOptions,
+  type CurrentUserResponse,
   type LoginRequest,
 } from '@couchrush/api-client';
 import {
-  createContext,
-  type PropsWithChildren,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from '@tanstack/react-query';
+import { createContext, type PropsWithChildren, useContext, useMemo, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -25,6 +25,9 @@ interface AuthContextValue {
   isSessionExpired: boolean;
   login: (payload: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
+  isLoggingIn: boolean;
+  isLoggingOut: boolean;
+  authError: unknown;
 }
 
 interface AuthProviderProps extends PropsWithChildren {
@@ -34,138 +37,157 @@ interface AuthProviderProps extends PropsWithChildren {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const SESSION_EXPIRED_MESSAGE = 'Your session has expired. Please sign in again.';
+export const AUTH_ME_QUERY_KEY = ['auth', 'me'] as const;
 
 export function AuthProvider({ apiClientOptions, children }: AuthProviderProps) {
+  const queryClient = useQueryClient();
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [status, setStatus] = useState<AuthStatus>('loading');
-  const [user, setUser] = useState<CurrentUserResponse | null>(null);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const accessTokenRef = useRef<string | null>(null);
   const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
+  const didAttemptRestoreRef = useRef(false);
 
-  function clearSession() {
+  const refreshClient = useMemo(() => new ApiClient(apiClientOptions), [apiClientOptions]);
+
+  function clearAuthState(queryClientInstance: QueryClient, sessionExpired: boolean) {
+    accessTokenRef.current = null;
     setAccessToken(null);
-    setUser(null);
-    setStatus('unauthenticated');
+    setIsSessionExpired(sessionExpired);
+    didAttemptRestoreRef.current = true;
+    queryClientInstance.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
+  }
+
+  async function performRefresh(): Promise<string | null> {
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
+    }
+
+    const refreshPromise = (async () => {
+      try {
+        const refreshed = await refreshClient.refresh();
+        accessTokenRef.current = refreshed.access_token;
+        setAccessToken(refreshed.access_token);
+        setIsSessionExpired(false);
+        return refreshed.access_token;
+      } catch (error) {
+        clearAuthState(queryClient, error instanceof ApiError && error.status === 401);
+        if (error instanceof ApiError && error.status !== 401) {
+          throw error;
+        }
+        return null;
+      } finally {
+        refreshPromiseRef.current = null;
+      }
+    })();
+
+    refreshPromiseRef.current = refreshPromise;
+    return refreshPromise;
   }
 
   const client = useMemo(
     () =>
       new ApiClient({
         ...apiClientOptions,
-        getAccessToken: () => accessToken,
-        refreshAccessToken: async () => {
-          if (refreshPromiseRef.current) {
-            return refreshPromiseRef.current;
-          }
-
-          const refreshPromise = (async () => {
-            try {
-              const refreshed = await new ApiClient(apiClientOptions).refresh();
-              setAccessToken(refreshed.access_token);
-              return refreshed.access_token;
-            } catch (error) {
-              clearSession();
-              setIsSessionExpired(true);
-              if (error instanceof ApiError && error.status !== 401) {
-                throw error;
-              }
-              return null;
-            } finally {
-              refreshPromiseRef.current = null;
-            }
-          })();
-
-          refreshPromiseRef.current = refreshPromise;
-          return refreshPromise;
-        },
+        getAccessToken: () => accessTokenRef.current,
+        refreshAccessToken: performRefresh,
       }),
-    [accessToken, apiClientOptions],
+    [apiClientOptions],
   );
 
-  useEffect(() => {
-    let cancelled = false;
+  const currentUserQuery = useQuery<CurrentUserResponse | null>({
+    queryKey: AUTH_ME_QUERY_KEY,
+    queryFn: async () => {
+      let token = accessTokenRef.current;
 
-    async function restoreSession() {
-      setStatus('loading');
-
-      try {
-        const refreshed = await new ApiClient(apiClientOptions).refresh();
-        if (cancelled) {
-          return;
+      if (!token) {
+        if (didAttemptRestoreRef.current) {
+          return null;
         }
 
-        setAccessToken(refreshed.access_token);
-
-        const currentUser = await new ApiClient({
-          ...apiClientOptions,
-          getAccessToken: () => refreshed.access_token,
-        }).getCurrentUser();
-
-        if (cancelled) {
-          return;
-        }
-
-        setUser(currentUser);
-        setIsSessionExpired(false);
-        setStatus('authenticated');
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        clearSession();
-        if (error instanceof ApiError && error.status === 401) {
-          setIsSessionExpired(true);
+        didAttemptRestoreRef.current = true;
+        token = await performRefresh();
+        if (!token) {
+          return null;
         }
       }
-    }
 
-    void restoreSession();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [apiClientOptions]);
-
-  async function login(payload: LoginRequest) {
-    setIsSessionExpired(false);
-
-    try {
-      const response = await new ApiClient(apiClientOptions).login(payload);
-      setAccessToken(response.access_token);
-
-      const currentUser = await new ApiClient({
+      const tokenClient = new ApiClient({
         ...apiClientOptions,
-        getAccessToken: () => response.access_token,
-      }).getCurrentUser();
+        getAccessToken: () => token,
+      });
 
-      setUser(currentUser);
-      setStatus('authenticated');
-    } catch (error) {
-      clearSession();
-      throw error;
-    }
-  }
+      return tokenClient.getCurrentUser();
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  async function logout() {
-    try {
-      await new ApiClient(apiClientOptions).logout();
-    } finally {
+  const loginMutation: UseMutationResult<void, unknown, LoginRequest> = useMutation({
+    mutationFn: async (payload) => {
+      const response = await refreshClient.login(payload);
+      const token = response.access_token;
+
+      didAttemptRestoreRef.current = true;
+      accessTokenRef.current = token;
+      setAccessToken(token);
       setIsSessionExpired(false);
-      clearSession();
-    }
-  }
+
+      const tokenClient = new ApiClient({
+        ...apiClientOptions,
+        getAccessToken: () => token,
+      });
+      const currentUser = await tokenClient.getCurrentUser();
+
+      queryClient.setQueryData(AUTH_ME_QUERY_KEY, currentUser);
+      await queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY });
+    },
+    onError: () => {
+      accessTokenRef.current = null;
+      setAccessToken(null);
+      setIsSessionExpired(false);
+    },
+  });
+
+  const logoutMutation: UseMutationResult<void, unknown, void> = useMutation({
+    mutationFn: async () => {
+      await refreshClient.logout();
+    },
+    onSettled: () => {
+      clearAuthState(queryClient, false);
+    },
+  });
+
+  const status: AuthStatus = currentUserQuery.isPending
+    ? 'loading'
+    : currentUserQuery.data
+      ? 'authenticated'
+      : 'unauthenticated';
 
   const value = useMemo<AuthContextValue>(
     () => ({
       client,
       status,
-      user,
+      user: currentUserQuery.data ?? null,
       isSessionExpired,
-      login,
-      logout,
+      login: async (payload) => {
+        await loginMutation.mutateAsync(payload);
+      },
+      logout: async () => {
+        await logoutMutation.mutateAsync();
+      },
+      isLoggingIn: loginMutation.isPending,
+      isLoggingOut: logoutMutation.isPending,
+      authError: currentUserQuery.error,
     }),
-    [client, isSessionExpired, status, user],
+    [
+      client,
+      currentUserQuery.data,
+      currentUserQuery.error,
+      isSessionExpired,
+      loginMutation,
+      logoutMutation,
+      status,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
