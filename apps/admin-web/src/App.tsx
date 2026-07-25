@@ -1,4 +1,15 @@
-import { Alert, Box, Button, CircularProgress, Container, Paper, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Container,
+  FormControlLabel,
+  Paper,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getApiErrorMessage } from '@couchrush/api-client';
 import {
@@ -51,6 +62,7 @@ function LoginPage() {
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const sessionExpiredMessage = getSessionExpiredMessage(isSessionExpired);
 
@@ -98,6 +110,16 @@ function LoginPage() {
           onChange={(event) => setPassword(event.target.value)}
           disabled={isLoggingIn}
           required
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+              disabled={isLoggingIn}
+            />
+          }
+          label="Remember email"
         />
         <Button type="submit" variant="contained" disabled={isLoggingIn}>
           {isLoggingIn ? <CircularProgress color="inherit" size={20} /> : 'Sign in'}

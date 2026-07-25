@@ -3,6 +3,14 @@ import { createTheme } from '@mui/material/styles';
 import { couchRushFonts, electricArcade } from './tokens';
 
 const { brand, dark, light, semantic, radius, layout } = electricArcade;
+const interactiveControlHover = {
+  backgroundColor:
+    'color-mix(in srgb, var(--couchrush-palette-primary-main), var(--couchrush-palette-background-paper) 92%)',
+};
+const interactiveControlHoverStrong = {
+  backgroundColor:
+    'color-mix(in srgb, var(--couchrush-palette-primary-main), var(--couchrush-palette-background-paper) 89%)',
+};
 
 export const couchRushTheme = createTheme({
   cssVariables: {
@@ -295,6 +303,7 @@ export const couchRushTheme = createTheme({
       defaultProps: {
         disableElevation: true,
         variant: 'contained',
+        size: 'small',
       },
       styleOverrides: {
         root: {
@@ -334,6 +343,9 @@ export const couchRushTheme = createTheme({
       },
     },
     MuiIconButton: {
+      defaultProps: {
+        size: 'small',
+      },
       styleOverrides: {
         root: {
           border: '1px solid var(--couchrush-palette-divider)',
@@ -417,7 +429,7 @@ export const couchRushTheme = createTheme({
     MuiTextField: {
       defaultProps: {
         variant: 'outlined',
-        size: 'medium',
+        size: 'small',
       },
     },
     MuiOutlinedInput: {
@@ -432,6 +444,12 @@ export const couchRushTheme = createTheme({
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
             borderWidth: 1,
             borderColor: 'var(--couchrush-palette-primary-main)',
+          },
+          '& .MuiOutlinedInput-input:-webkit-autofill': {
+            WebkitBoxShadow: '0 0 0 100px var(--couchrush-palette-surface) inset',
+            WebkitTextFillColor: 'var(--couchrush-palette-text-primary)',
+            caretColor: 'var(--couchrush-palette-text-primary)',
+            borderRadius: 'inherit',
           },
         },
         notchedOutline: {
@@ -477,6 +495,9 @@ export const couchRushTheme = createTheme({
       },
     },
     MuiChip: {
+      defaultProps: {
+        size: 'small',
+      },
       styleOverrides: {
         root: {
           minHeight: 30,
@@ -644,10 +665,37 @@ export const couchRushTheme = createTheme({
       },
     },
     MuiSwitch: {
+      defaultProps: {
+        size: 'small',
+      },
       styleOverrides: {
         switchBase: {
+          position: 'relative',
+          borderRadius: 12,
+          transition: 'background-color 160ms ease',
+          '&:hover': {
+            backgroundColor: 'transparent',
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: '50%',
+            width: 26,
+            height: 26,
+            borderRadius: 10,
+            transform: 'translate(-50%, -50%)',
+            transition: 'background-color 160ms ease',
+            zIndex: 0,
+            pointerEvents: 'none',
+          },
+          '& .MuiSwitch-thumb': {
+            position: 'relative',
+            zIndex: 1,
+          },
+          '&:hover::before': interactiveControlHover,
           '&.Mui-checked': {
             color: 'var(--couchrush-palette-primary-main)',
+            '&:hover::before': interactiveControlHoverStrong,
             '& + .MuiSwitch-track': {
               backgroundColor: 'var(--couchrush-palette-primary-main)',
               opacity: 0.55,
@@ -659,11 +707,83 @@ export const couchRushTheme = createTheme({
     MuiCheckbox: {
       defaultProps: {
         color: 'primary',
+        size: 'small',
+      },
+      styleOverrides: {
+        root: {
+          position: 'relative',
+          borderRadius: 12,
+          transition: 'color 160ms ease',
+          zIndex: 0,
+          '&:hover': {
+            backgroundColor: 'transparent',
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: '50%',
+            width: 28,
+            height: 28,
+            borderRadius: 10,
+            transform: 'translate(-50%, -50%)',
+            transition: 'background-color 160ms ease',
+            zIndex: -1,
+            pointerEvents: 'none',
+          },
+          '&:hover::before': interactiveControlHover,
+          '&.Mui-checked:hover::before': interactiveControlHoverStrong,
+        },
       },
     },
     MuiRadio: {
       defaultProps: {
         color: 'primary',
+        size: 'small',
+      },
+      styleOverrides: {
+        root: {
+          position: 'relative',
+          borderRadius: 12,
+          transition: 'color 160ms ease',
+          zIndex: 0,
+          '&:hover': {
+            backgroundColor: 'transparent',
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: '50%',
+            width: 28,
+            height: 28,
+            borderRadius: 10,
+            transform: 'translate(-50%, -50%)',
+            transition: 'background-color 160ms ease',
+            zIndex: -1,
+            pointerEvents: 'none',
+          },
+          '&:hover::before': interactiveControlHover,
+          '&.Mui-checked:hover::before': interactiveControlHoverStrong,
+        },
+      },
+    },
+    MuiSlider: {
+      styleOverrides: {
+        thumb: {
+          transition:
+            'box-shadow 160ms ease, background-color 160ms ease, outline-color 160ms ease',
+          boxShadow: '0 0 0 0 rgba(0, 0, 0, 0)',
+          '&:hover, &.Mui-focusVisible': {
+            boxShadow:
+              '0 0 0 8px color-mix(in srgb, var(--couchrush-palette-primary-main), var(--couchrush-palette-background-paper) 86%)',
+          },
+          '&.Mui-active': {
+            boxShadow:
+              '0 0 0 11px color-mix(in srgb, var(--couchrush-palette-primary-main), var(--couchrush-palette-background-paper) 82%)',
+          },
+        },
+        valueLabel: {
+          borderRadius: 10,
+        },
       },
     },
   },
