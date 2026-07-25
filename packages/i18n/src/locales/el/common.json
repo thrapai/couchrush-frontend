@@ -1,0 +1,52 @@
+{
+  "common": {
+    "actions": {
+      "save": "Αποθήκευση",
+      "cancel": "Ακύρωση",
+      "close": "Κλείσιμο",
+      "confirm": "Επιβεβαίωση",
+      "delete": "Διαγραφή",
+      "edit": "Επεξεργασία",
+      "open": "Άνοιγμα",
+      "retry": "Δοκιμάστε ξανά",
+      "submit": "Υποβολή",
+      "reload": "Επαναφόρτωση"
+    },
+    "auth": {
+      "login": "Σύνδεση",
+      "logout": "Αποσύνδεση",
+      "register": "Εγγραφή",
+      "email": "Email",
+      "password": "Κωδικός",
+      "rememberEmail": "Να θυμάσαι το email",
+      "profile": "Το προφίλ μου",
+      "displayName": "Εμφανιζόμενο όνομα"
+    },
+    "brand": {
+      "logoAlt": "Couchrush"
+    },
+    "language": {
+      "label": "Γλώσσα",
+      "english": "English",
+      "greek": "Ελληνικά"
+    },
+    "loading": "Φόρτωση",
+    "loadingSession": "Φόρτωση συνεδρίας…",
+    "errors": {
+      "generic": "Κάτι πήγε στραβά.",
+      "sessionExpired": "Η συνεδρία σας έληξε. Συνδεθείτε ξανά.",
+      "forbidden": "Δεν έχετε πρόσβαση σε αυτή τη σελίδα.",
+      "forbiddenSignedIn": "Έχετε συνδεθεί, αλλά δεν έχετε πρόσβαση σε αυτή τη σελίδα.",
+      "applicationTitle": "Σφάλμα εφαρμογής"
+    },
+    "theme": {
+      "darkMode": "Σκούρα λειτουργία",
+      "lightMode": "Φωτεινή λειτουργία",
+      "switchToDarkMode": "Αλλαγή σε σκούρα λειτουργία",
+      "switchToLightMode": "Αλλαγή σε φωτεινή λειτουργία"
+    },
+    "userMenu": {
+      "open": "Άνοιγμα μενού χρήστη"
+    }
+  }
+}

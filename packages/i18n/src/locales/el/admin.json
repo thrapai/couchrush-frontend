@@ -1,0 +1,83 @@
+{
+  "admin": {
+    "navigation": {
+      "overview": "Επισκόπηση",
+      "users": "Χρήστες",
+      "rolesPermissions": "Ρόλοι & Δικαιώματα",
+      "profile": "Το προφίλ μου",
+      "content": "ΠΕΡΙΕΧΟΜΕΝΟ",
+      "games": "Παιχνίδια",
+      "questionSets": "Σετ ερωτήσεων",
+      "questions": "Ερωτήσεις",
+      "translations": "Μεταφράσεις",
+      "operations": "ΛΕΙΤΟΥΡΓΙΕΣ",
+      "rooms": "Δωμάτια",
+      "gameSessions": "Συνεδρίες παιχνιδιού",
+      "system": "ΣΥΣΤΗΜΑ",
+      "auditLogs": "Αρχεία ελέγχου",
+      "settings": "Ρυθμίσεις",
+      "soon": "Σύντομα"
+    },
+    "navigationDescriptions": {
+      "overview": "Αρχική σελίδα portal",
+      "users": "Κατάλογος χρηστών και πρόσβαση",
+      "rolesPermissions": "Έλεγχοι ανάθεσης ρόλων"
+    },
+    "shell": {
+      "openNavigation": "Άνοιγμα πλοήγησης",
+      "closeNavigation": "Κλείσιμο πλοήγησης",
+      "openSidebar": "Άνοιγμα sidebar",
+      "collapseSidebar": "Σύμπτυξη sidebar",
+      "more": "Περισσότερα"
+    },
+    "actions": {
+      "backToOverview": "Πίσω στην επισκόπηση"
+    },
+    "auth": {
+      "loginTitle": "Couchrush Admin",
+      "loginSubtitle": "Συνδεθείτε με τον admin λογαριασμό σας.",
+      "signIn": "Σύνδεση",
+      "signInFailed": "Η σύνδεση απέτυχε.",
+      "needAccount": "Χρειάζεστε λογαριασμό;",
+      "registerTitle": "Δημιουργία λογαριασμού",
+      "registerSubtitle": "Εγγραφή λογαριασμού Couchrush.",
+      "registrationSuccess": "Ο λογαριασμός δημιουργήθηκε. Μπορείτε να συνδεθείτε τώρα.",
+      "registrationFailed": "Η εγγραφή απέτυχε.",
+      "alreadyHaveAccount": "Έχετε ήδη λογαριασμό;"
+    },
+    "errors": {
+      "portalLoadFailed": "Κάτι πήγε στραβά κατά τη φόρτωση του admin portal.",
+      "logoutFailedLocalOnly": "Έγινε τοπική αποσύνδεση. Η συνεδρία στον server δεν μπόρεσε να ακυρωθεί."
+    },
+    "overview": {
+      "title": "Επισκόπηση",
+      "welcome": "ΚΑΛΩΣ ΗΡΘΕΣ, {{name}}",
+      "yourAccess": "Η πρόσβασή σου",
+      "permissionCount": "{{count}} δικαιώματα",
+      "noRoles": "Χωρίς ρόλους",
+      "noPermissions": "Δεν υπάρχουν διαθέσιμα ενεργά δικαιώματα.",
+      "userMetrics": "Μετρικά χρηστών",
+      "totalUsers": "Σύνολο χρηστών",
+      "activeUsers": "Ενεργοί χρήστες",
+      "metricsPermissionUnavailable": "Τα μετρικά χρηστών δεν είναι διαθέσιμα επειδή ο λογαριασμός δεν έχει users:read.",
+      "metricsLoadError": "Δεν ήταν δυνατή η φόρτωση των μετρικών χρηστών.",
+      "quickActions": "Γρήγορες ενέργειες",
+      "manageUsers": "Διαχείριση χρηστών",
+      "viewMyProfile": "Προβολή προφίλ"
+    },
+    "users": {
+      "title": "Χρήστες",
+      "description": "Το UI διαχείρισης χρηστών θα προστεθεί αργότερα. Αυτό το placeholder βρίσκεται μέσα στο κοινό admin shell."
+    },
+    "profile": {
+      "title": "Το προφίλ μου",
+      "description": "Η επεξεργασία προφίλ θα προστεθεί αργότερα. Οι λεπτομέρειες της τρέχουσας συνεδρίας εμφανίζονται παρακάτω.",
+      "emailLabel": "Email: {{email}}",
+      "roles": "Ρόλοι"
+    },
+    "permissions": {
+      "title": "Ρόλοι & Δικαιώματα",
+      "description": "Το UI διαχείρισης ρόλων και δικαιωμάτων θα προστεθεί αργότερα. Αυτό το placeholder κρατά έτοιμα το shell και το route."
+    }
+  }
+}

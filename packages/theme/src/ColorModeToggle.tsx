@@ -4,7 +4,12 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import { useColorScheme } from '@mui/material/styles';
 
-export function ColorModeToggle() {
+interface ColorModeToggleProps {
+  switchToDarkModeLabel?: string;
+  switchToLightModeLabel?: string;
+}
+
+export function ColorModeToggle({ switchToDarkModeLabel, switchToLightModeLabel }: ColorModeToggleProps) {
   const { mode, setMode } = useColorScheme();
 
   if (!mode) {
@@ -13,7 +18,9 @@ export function ColorModeToggle() {
 
   const resolvedMode = mode === 'system' ? 'dark' : mode;
   const nextMode = resolvedMode === 'dark' ? 'light' : 'dark';
-  const label = `Switch to ${nextMode} mode`;
+  const label = nextMode === 'light'
+    ? switchToLightModeLabel ?? 'Switch to light mode'
+    : switchToDarkModeLabel ?? 'Switch to dark mode';
 
   return (
     <Tooltip title={label}>

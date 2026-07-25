@@ -1,0 +1,52 @@
+{
+  "common": {
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "edit": "Edit",
+      "open": "Open",
+      "retry": "Retry",
+      "submit": "Submit",
+      "reload": "Reload"
+    },
+    "auth": {
+      "login": "Login",
+      "logout": "Logout",
+      "register": "Register",
+      "email": "Email",
+      "password": "Password",
+      "rememberEmail": "Remember email",
+      "profile": "My Profile",
+      "displayName": "Display name"
+    },
+    "brand": {
+      "logoAlt": "Couchrush"
+    },
+    "language": {
+      "label": "Language",
+      "english": "English",
+      "greek": "Ελληνικά"
+    },
+    "loading": "Loading",
+    "loadingSession": "Loading session…",
+    "errors": {
+      "generic": "Something went wrong.",
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "forbidden": "You do not have access to this page.",
+      "forbiddenSignedIn": "You are signed in, but you do not have access to this page.",
+      "applicationTitle": "Application error"
+    },
+    "theme": {
+      "darkMode": "Dark mode",
+      "lightMode": "Light mode",
+      "switchToDarkMode": "Switch to dark mode",
+      "switchToLightMode": "Switch to light mode"
+    },
+    "userMenu": {
+      "open": "Open user menu"
+    }
+  }
+}

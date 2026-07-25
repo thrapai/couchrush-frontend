@@ -1,22 +1,43 @@
-import { Box, Container, Typography } from '@mui/material';
-import { ColorModeToggle } from '@couchrush/theme';
-import { Button } from '@couchrush/ui';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@couchrush/auth';
+import type { ApiClientOptions } from '@couchrush/api-client';
+import { BrowserRouter } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
+import { AppRoutes } from './AppRoutes';
+import { GlobalSnackbarProvider } from './providers/GlobalSnackbarProvider';
 
-export function App() {
+interface AppProps {
+  apiClientOptions?: ApiClientOptions;
+}
+
+export function App({ apiClientOptions: apiClientOptionsProp }: AppProps) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+          },
+        },
+      }),
+  );
+  const apiClientOptions = useMemo(
+    () => apiClientOptionsProp ?? { baseUrl: import.meta.env.VITE_API_BASE_URL ?? '' },
+    [apiClientOptionsProp],
+  );
+
   return (
-    <Container maxWidth="sm" sx={{ py: 6 }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
-        <Box sx={{ alignSelf: 'flex-end' }}>
-          <ColorModeToggle />
-        </Box>
-        <Typography variant="h4" component="h1">
-          Couchrush Admin
-        </Typography>
-        <Typography color="text.secondary">
-          Shared theme package with CouchRush color schemes and component overrides.
-        </Typography>
-        <Button>Ready</Button>
-      </Box>
-    </Container>
+    <QueryClientProvider client={queryClient}>
+      <GlobalSnackbarProvider>
+        <AuthProvider apiClientOptions={apiClientOptions}>
+          <AppErrorBoundary>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </AppErrorBoundary>
+        </AuthProvider>
+      </GlobalSnackbarProvider>
+    </QueryClientProvider>
   );
 }
