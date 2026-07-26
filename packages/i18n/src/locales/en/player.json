@@ -3,11 +3,66 @@
     "actions": {
       "join": "Join",
       "leave": "Leave",
+      "joinRoom": "Join room",
+      "copyCode": "Copy code",
       "submitAnswer": "Submit answer"
     },
     "status": {
       "waiting": "Waiting",
-      "loadingQuestion": "Loading question"
+      "loadingQuestion": "Loading question",
+      "guestMode": "Guest mode",
+      "roomClosed": "Room closed",
+      "sessionExpired": "Reconnect expired",
+      "removed": "Removed from room"
+    },
+    "home": {
+      "title": "CouchRush",
+      "subtitle": "Create a lobby, share the code, and validate the room backend.",
+      "createTitle": "Create room",
+      "createSubtitle": "Start a lobby and decide whether the host also plays.",
+      "joinTitle": "Join room",
+      "joinSubtitle": "Use a room code to join as a guest or signed-in player.",
+      "authTitle": "Account",
+      "authSubtitle": "Signed-in users can also create or join rooms with their existing session.",
+      "loginTitle": "Sign in",
+      "loginSubtitle": "Optional. Guest play is available without an account.",
+      "needAccount": "Need an account?",
+      "registerTitle": "Create account",
+      "registerSubtitle": "Register once, then reuse the same session when joining rooms.",
+      "alreadyHaveAccount": "Already have an account?",
+      "registrationSuccess": "Account created. You can sign in now.",
+      "registrationFailed": "Registration failed."
+    },
+    "form": {
+      "roomCode": "Room code",
+      "displayName": "Display name",
+      "hostAndPlay": "Host and play",
+      "hostOnly": "Host only",
+      "displayNameRequired": "Display name is required.",
+      "roomCodeRequired": "Room code is required."
+    },
+    "lobby": {
+      "title": "Lobby",
+      "roomCode": "Room code",
+      "members": "Players",
+      "connectionStatus": "Connection status",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "you": "You",
+      "hostBadge": "Host",
+      "hostOnlyBadge": "Host only",
+      "playerBadge": "Player",
+      "copied": "Copied",
+      "noSession": "No room session was found for this room.",
+      "reconnectFailed": "This room session is no longer valid. Join again.",
+      "roomClosed": "This room has been closed.",
+      "leaveSuccess": "You left the room.",
+      "removeAction": "Remove",
+      "closeRoom": "Close room",
+      "leaveRoom": "Leave room",
+      "memberRemoved": "A player was removed from the room.",
+      "memberDisconnected": "A player disconnected.",
+      "memberReconnected": "A player reconnected."
     }
   }
 }

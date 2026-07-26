@@ -8,9 +8,11 @@
       "delete": "Delete",
       "edit": "Edit",
       "open": "Open",
+      "copy": "Copy",
       "retry": "Retry",
       "submit": "Submit",
-      "reload": "Reload"
+      "reload": "Reload",
+      "backHome": "Back home"
     },
     "auth": {
       "login": "Login",
@@ -32,6 +34,12 @@
     },
     "loading": "Loading",
     "loadingSession": "Loading session…",
+    "status": {
+      "connected": "Connected",
+      "connecting": "Connecting",
+      "disconnected": "Disconnected",
+      "error": "Connection error"
+    },
     "errors": {
       "generic": "Something went wrong.",
       "sessionExpired": "Your session has expired. Please sign in again.",
