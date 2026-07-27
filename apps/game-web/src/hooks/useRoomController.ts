@@ -156,6 +156,7 @@ export function useRoomController(roomCode: string) {
           socket.disconnect();
           socketRef.current = null;
           setConnectionStatus('error');
+          setErrorMessage('player.lobby.realtimeConnectFailed');
           return;
         }
 

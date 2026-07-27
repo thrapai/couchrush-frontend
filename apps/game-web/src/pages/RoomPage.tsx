@@ -94,7 +94,7 @@ export function RoomPage() {
           room={room}
           connectionStatus={connectionStatus}
           copied={copied}
-          actionError={errorMessage}
+          actionError={errorMessage?.startsWith('player.') ? t(errorMessage) : errorMessage}
           serverMessage={serverMessage ? t(serverMessage) : null}
           actionPending={actionPending}
           onCopyCode={() => {

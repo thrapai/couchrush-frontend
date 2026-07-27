@@ -66,6 +66,7 @@
       "noSession": "No room session was found for this room.",
       "reconnectFailed": "This room session is no longer valid. Join again.",
       "roomClosed": "This room has been closed.",
+      "realtimeConnectFailed": "Realtime connection failed. Check the backend Socket.IO server and /ws proxy.",
       "leaveSuccess": "You left the room.",
       "removeAction": "Remove",
       "closeRoom": "Close room",

@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Checkbox,
   FormControlLabel,
   Link,
@@ -15,7 +16,7 @@ import {
 import { AuthFormCard } from '@couchrush/ui';
 import { LanguageSwitcher, useTranslation } from '@couchrush/i18n';
 import { getApiErrorMessage, type LoginRequest } from '@couchrush/api-client';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@couchrush/auth';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
@@ -56,6 +57,7 @@ export function HomePage() {
   const [displayName, setDisplayName] = useState(() =>
     defaultDisplayName(user?.display_name ?? null, user?.email),
   );
+  const [roomCode, setRoomCode] = useState('');
   const [hostMode, setHostMode] = useState<HostMode>('host-player');
   const [roomVisibility, setRoomVisibility] = useState<RoomVisibility>('private');
   const [formError, setFormError] = useState<string | null>(null);
@@ -71,6 +73,11 @@ export function HomePage() {
     setRememberEmailEnabled(rememberEmail);
   }, [rememberEmail]);
 
+  const publicRoomsQuery = useQuery({
+    queryKey: ['publicRooms'],
+    queryFn: () => client.listPublicRooms(),
+  });
+
   const createRoomMutation = useMutation({
     mutationFn: async () => {
       const trimmedDisplayName = displayName.trim();
@@ -82,6 +89,54 @@ export function HomePage() {
         display_name: trimmedDisplayName,
         participate_as_player: hostMode === 'host-player',
         is_public: roomVisibility === 'public',
+      });
+    },
+    onSuccess: (response) => {
+      saveStoredRoomSession(response.session);
+      void navigate(`/room/${response.session.room_code}`);
+    },
+    onError: (error) => {
+      setFormError(getApiErrorMessage(error));
+    },
+  });
+
+  const joinMutation = useMutation({
+    mutationFn: async () => {
+      const trimmedDisplayName = displayName.trim();
+      const normalizedRoomCode = roomCode.trim().toUpperCase();
+
+      if (!normalizedRoomCode) {
+        throw new Error(t('player.form.roomCodeRequired'));
+      }
+
+      if (!trimmedDisplayName) {
+        throw new Error(t('player.form.displayNameRequired'));
+      }
+
+      return client.joinRoom({
+        room_code: normalizedRoomCode,
+        display_name: trimmedDisplayName,
+      });
+    },
+    onSuccess: (response) => {
+      saveStoredRoomSession(response.session);
+      void navigate(`/room/${response.session.room_code}`);
+    },
+    onError: (error) => {
+      setFormError(getApiErrorMessage(error));
+    },
+  });
+
+  const joinPublicMutation = useMutation({
+    mutationFn: async (roomId: string) => {
+      const trimmedDisplayName = displayName.trim();
+
+      if (!trimmedDisplayName) {
+        throw new Error(t('player.form.displayNameRequired'));
+      }
+
+      return client.joinPublicRoom(roomId, {
+        display_name: trimmedDisplayName,
       });
     },
     onSuccess: (response) => {
@@ -185,14 +240,89 @@ export function HomePage() {
 
           <Stack spacing={2.5} sx={{ flex: 1 }}>
             <Paper sx={{ p: 3 }}>
-              <Stack spacing={1.5}>
+              <Stack spacing={2}>
                 <Box>
                   <Typography variant="h5">{t('player.home.joinTitle')}</Typography>
                   <Typography color="text.secondary">{t('player.home.joinSubtitle')}</Typography>
                 </Box>
-                <Button size="small" component={RouterLink} to="/join" variant="outlined">
+                <TextField
+                  size="small"
+                  label={t('player.form.roomCode')}
+                  value={roomCode}
+                  onChange={(event) => {
+                    setRoomCode(event.target.value.toUpperCase());
+                    setFormError(null);
+                  }}
+                />
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() => {
+                    setFormError(null);
+                    joinMutation.mutate();
+                  }}
+                  disabled={joinMutation.isPending}
+                >
                   {t('player.actions.joinRoom')}
                 </Button>
+              </Stack>
+            </Paper>
+
+            <Paper sx={{ p: 3 }}>
+              <Stack spacing={1.25}>
+                <Box>
+                  <Typography variant="h5">{t('player.publicRooms.title')}</Typography>
+                  <Typography color="text.secondary">{t('player.publicRooms.subtitle')}</Typography>
+                </Box>
+
+                {publicRoomsQuery.isError ? (
+                  <Alert severity="error">{getApiErrorMessage(publicRoomsQuery.error)}</Alert>
+                ) : null}
+
+                {publicRoomsQuery.isLoading ? (
+                  <Typography color="text.secondary">{t('player.publicRooms.loading')}</Typography>
+                ) : null}
+
+                {publicRoomsQuery.data?.items.length === 0 ? (
+                  <Typography color="text.secondary">{t('player.publicRooms.empty')}</Typography>
+                ) : null}
+
+                {publicRoomsQuery.data?.items.map((room) => (
+                  <Paper key={room.id} variant="outlined" sx={{ p: 1.5 }}>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={1.25}
+                      sx={{ alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between' }}
+                    >
+                      <Box>
+                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                          <Typography sx={{ fontWeight: 700 }}>{room.code}</Typography>
+                          <Chip
+                            size="small"
+                            label={t('player.publicRooms.players', {
+                              count: room.player_count,
+                              limit: room.player_limit,
+                            })}
+                          />
+                        </Stack>
+                        <Typography color="text.secondary">
+                          {room.host_display_name ?? t('player.publicRooms.unknownHost')}
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => {
+                          setFormError(null);
+                          joinPublicMutation.mutate(room.id);
+                        }}
+                        disabled={joinPublicMutation.isPending}
+                      >
+                        {t('player.actions.join')}
+                      </Button>
+                    </Stack>
+                  </Paper>
+                ))}
               </Stack>
             </Paper>
 

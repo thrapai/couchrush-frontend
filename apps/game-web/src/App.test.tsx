@@ -323,7 +323,7 @@ describe('game-web app', () => {
       return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
     });
 
-    renderApp('/join', { socketFactory: () => socket });
+    renderApp('/', { socketFactory: () => socket });
 
     await userEvent.type(await screen.findByRole('textbox', { name: 'Room code' }), ROOM_CODE.toLowerCase());
     await userEvent.type(screen.getByRole('textbox', { name: 'Display name' }), 'Alex');
@@ -348,6 +348,10 @@ describe('game-web app', () => {
       if (config.url === '/api/rooms') {
         expect(config.data).toEqual({ display_name: 'Host', participate_as_player: true, is_public: false });
         return jsonResponse(200, { room: HOST_ROOM, session: HOST_SESSION });
+      }
+
+      if (config.url === '/api/rooms/public?page=1&page_size=20') {
+        return jsonResponse(200, { items: [], page: 1, page_size: 20, total: 0 });
       }
 
       if (config.url === '/api/rooms/reconnect') {
@@ -384,6 +388,10 @@ describe('game-web app', () => {
         return jsonResponse(200, { room: HOST_ONLY_ROOM, session: HOST_ONLY_SESSION });
       }
 
+      if (config.url === '/api/rooms/public?page=1&page_size=20') {
+        return jsonResponse(200, { items: [], page: 1, page_size: 20, total: 0 });
+      }
+
       if (config.url === '/api/rooms/reconnect') {
         expect(config.headers?.['X-Room-CSRF-Token']).toBe(HOST_ONLY_SESSION.csrf_token);
         return jsonResponse(200, {
@@ -417,6 +425,10 @@ describe('game-web app', () => {
       if (config.url === '/api/rooms') {
         expect(config.data).toEqual({ display_name: 'Host', participate_as_player: true, is_public: true });
         return jsonResponse(200, { room: PUBLIC_HOST_ROOM, session: HOST_SESSION });
+      }
+
+      if (config.url === '/api/rooms/public?page=1&page_size=20') {
+        return jsonResponse(200, { items: [], page: 1, page_size: 20, total: 0 });
       }
 
       if (config.url === '/api/rooms/reconnect') {
@@ -484,7 +496,7 @@ describe('game-web app', () => {
       return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
     });
 
-    renderApp('/join', { socketFactory: () => socket });
+    renderApp('/', { socketFactory: () => socket });
 
     await userEvent.type(await screen.findByRole('textbox', { name: 'Display name' }), 'Alex');
     expect(await screen.findByText(ROOM_CODE)).toBeInTheDocument();
@@ -782,6 +794,10 @@ describe('game-web app', () => {
         return jsonResponse(200, { ...AUTH_PROFILE, email: 'saved@example.com' });
       }
 
+      if (config.url === '/api/rooms/public?page=1&page_size=20') {
+        return jsonResponse(200, { items: [], page: 1, page_size: 20, total: 0 });
+      }
+
       return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
     });
 
@@ -818,6 +834,10 @@ describe('game-web app', () => {
           roles: ['USER'],
           created_at: '2026-07-26T12:00:00Z',
         });
+      }
+
+      if (config.url === '/api/rooms/public?page=1&page_size=20') {
+        return jsonResponse(200, { items: [], page: 1, page_size: 20, total: 0 });
       }
 
       return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });

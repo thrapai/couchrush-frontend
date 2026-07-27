@@ -66,6 +66,7 @@
       "noSession": "Δεν βρέθηκε συνεδρία δωματίου για αυτό το δωμάτιο.",
       "reconnectFailed": "Αυτή η συνεδρία δωματίου δεν είναι πλέον έγκυρη. Μπείτε ξανά.",
       "roomClosed": "Αυτό το δωμάτιο έχει κλείσει.",
+      "realtimeConnectFailed": "Η realtime σύνδεση απέτυχε. Ελέγξτε τον backend Socket.IO server και το /ws proxy.",
       "leaveSuccess": "Αποχωρήσατε από το δωμάτιο.",
       "removeAction": "Αφαίρεση",
       "closeRoom": "Κλείσιμο δωματίου",

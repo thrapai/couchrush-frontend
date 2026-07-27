@@ -18,6 +18,7 @@ export interface RoomSocketEventMap {
 }
 
 type RoomSocketEventName = keyof RoomSocketEventMap;
+const CONNECT_TIMEOUT_MS = 5000;
 
 export interface RoomSocketClient {
   connectMember: () => Promise<RoomSocketState | null>;
@@ -55,19 +56,59 @@ function registerConnectionListener(socket: Socket, listener: (status: Connectio
   };
 }
 
+function waitForSocketConnect(socket: Socket) {
+  if (socket.connected) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Socket connection timed out.'));
+    }, CONNECT_TIMEOUT_MS);
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      socket.off('connect', handleConnect);
+      socket.off('connect_error', handleConnectError);
+    };
+    const handleConnect = () => {
+      cleanup();
+      resolve();
+    };
+    const handleConnectError = (error: Error) => {
+      cleanup();
+      reject(error);
+    };
+
+    socket.once('connect', handleConnect);
+    socket.once('connect_error', handleConnectError);
+    socket.connect();
+  });
+}
+
 export function createRoomSocketClient(options: CreateRoomSocketClientOptions = {}): RoomSocketClient {
   const socket = io(options.baseUrl ?? undefined, {
-    autoConnect: true,
+    autoConnect: false,
     path: '/ws/socket.io',
     withCredentials: true,
   });
 
   return {
-    connectMember() {
+    async connectMember() {
+      try {
+        await waitForSocketConnect(socket);
+      } catch {
+        return null;
+      }
+
       return new Promise((resolve) => {
-        socket.emit('connect_to_room', {}, (response: RoomSocketState | null) => {
-          resolve(response);
-        });
+        socket.timeout(CONNECT_TIMEOUT_MS).emit(
+          'connect_to_room',
+          {},
+          (error: Error | null, response: RoomSocketState | null) => {
+            resolve(error ? null : response);
+          },
+        );
       });
     },
     on(eventName, listener) {
