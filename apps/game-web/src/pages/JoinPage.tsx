@@ -1,6 +1,6 @@
-import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from '@mui/material';
 import { getApiErrorMessage } from '@couchrush/api-client';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@couchrush/auth';
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -28,6 +28,10 @@ export function JoinPage() {
     defaultDisplayName(user?.display_name ?? null, user?.email),
   );
   const [formError, setFormError] = useState<string | null>(null);
+  const publicRoomsQuery = useQuery({
+    queryKey: ['publicRooms'],
+    queryFn: () => client.listPublicRooms(),
+  });
 
   const joinMutation = useMutation({
     mutationFn: async () => {
@@ -56,6 +60,27 @@ export function JoinPage() {
     },
   });
 
+  const joinPublicMutation = useMutation({
+    mutationFn: async (roomId: string) => {
+      const trimmedDisplayName = displayName.trim();
+
+      if (!trimmedDisplayName) {
+        throw new Error(t('player.form.displayNameRequired'));
+      }
+
+      return client.joinPublicRoom(roomId, {
+        display_name: trimmedDisplayName,
+      });
+    },
+    onSuccess: (response) => {
+      saveStoredRoomSession(response.session);
+      void navigate(`/room/${response.session.room_code}`);
+    },
+    onError: (error) => {
+      setFormError(getApiErrorMessage(error));
+    },
+  });
+
   return (
     <Box
       sx={{
@@ -67,7 +92,7 @@ export function JoinPage() {
         justifyContent: 'center',
       }}
     >
-      <Paper sx={{ p: 3, width: '100%', maxWidth: 520 }}>
+      <Paper sx={{ p: 3, width: '100%', maxWidth: 620 }}>
         <Stack spacing={2.5}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
             <Box>
@@ -115,6 +140,62 @@ export function JoinPage() {
             <Button size="small" variant="outlined" component={RouterLink} to="/">
               {t('common:common.actions.backHome')}
             </Button>
+          </Stack>
+
+          <Stack spacing={1.25}>
+            <Box>
+              <Typography variant="h6">{t('player.publicRooms.title')}</Typography>
+              <Typography color="text.secondary">{t('player.publicRooms.subtitle')}</Typography>
+            </Box>
+
+            {publicRoomsQuery.isError ? (
+              <Alert severity="error">{getApiErrorMessage(publicRoomsQuery.error)}</Alert>
+            ) : null}
+
+            {publicRoomsQuery.isLoading ? (
+              <Typography color="text.secondary">{t('player.publicRooms.loading')}</Typography>
+            ) : null}
+
+            {publicRoomsQuery.data?.items.length === 0 ? (
+              <Typography color="text.secondary">{t('player.publicRooms.empty')}</Typography>
+            ) : null}
+
+            {publicRoomsQuery.data?.items.map((room) => (
+              <Paper key={room.id} variant="outlined" sx={{ p: 1.5 }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.25}
+                  sx={{ alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between' }}
+                >
+                  <Box>
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                      <Typography sx={{ fontWeight: 700 }}>{room.code}</Typography>
+                      <Chip
+                        size="small"
+                        label={t('player.publicRooms.players', {
+                          count: room.player_count,
+                          limit: room.player_limit,
+                        })}
+                      />
+                    </Stack>
+                    <Typography color="text.secondary">
+                      {room.host_display_name ?? t('player.publicRooms.unknownHost')}
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setFormError(null);
+                      joinPublicMutation.mutate(room.id);
+                    }}
+                    disabled={joinPublicMutation.isPending}
+                  >
+                    {t('player.actions.join')}
+                  </Button>
+                </Stack>
+              </Paper>
+            ))}
           </Stack>
         </Stack>
       </Paper>

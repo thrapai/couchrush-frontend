@@ -1,6 +1,7 @@
 import type { RoomMemberSessionResponse } from '@couchrush/api-client';
 
 const ROOM_SESSION_STORAGE_KEY = 'couchrush.game.room_session';
+const ROOM_CSRF_COOKIE_NAME = 'couchrush_room_csrf';
 
 function hasWindow() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -58,4 +59,16 @@ export function loadStoredRoomSessionForCode(roomCode: string) {
   }
 
   return session.room_code.toUpperCase() === roomCode.toUpperCase() ? session : null;
+}
+
+export function loadRoomCsrfToken(fallback: string) {
+  if (typeof document === 'undefined') {
+    return fallback;
+  }
+
+  const csrfCookie = document.cookie
+    .split('; ')
+    .find((cookie) => cookie.startsWith(`${ROOM_CSRF_COOKIE_NAME}=`));
+
+  return csrfCookie ? decodeURIComponent(csrfCookie.split('=').slice(1).join('=')) : fallback;
 }

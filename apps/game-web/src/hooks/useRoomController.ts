@@ -1,8 +1,18 @@
-import { getApiErrorMessage, type RoomControllerStateResponse, type RoomMemberSessionResponse } from '@couchrush/api-client';
-import { useMutation } from '@tanstack/react-query';
+import {
+  getApiErrorMessage,
+  type ApiClient,
+  type ReconnectRoomResponse,
+  type RoomControllerStateResponse,
+  type RoomMemberSessionResponse,
+} from '@couchrush/api-client';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@couchrush/auth';
-import { clearStoredRoomSession, loadStoredRoomSessionForCode, saveStoredRoomSession } from '../lib/roomSession';
+import {
+  clearStoredRoomSession,
+  loadRoomCsrfToken,
+  loadStoredRoomSessionForCode,
+  saveStoredRoomSession,
+} from '../lib/roomSession';
 import type { ConnectionStatus, RoomSocketClient } from '../lib/roomSocket';
 import { useRoomSocketFactory } from '../roomSocketFactoryContext';
 
@@ -10,6 +20,23 @@ type RoomViewStatus = 'loading' | 'ready' | 'missing-session' | 'invalid-session
 
 function isApiStatus(error: unknown, status: number) {
   return typeof error === 'object' && error !== null && 'status' in error && error.status === status;
+}
+
+const reconnectRequests = new Map<string, Promise<ReconnectRoomResponse>>();
+
+function reconnectRoomOnce(client: ApiClient, csrfToken: string) {
+  const pendingRequest = reconnectRequests.get(csrfToken);
+  if (pendingRequest) {
+    return pendingRequest;
+  }
+
+  const request = client.reconnectRoom(csrfToken).finally(() => {
+    if (reconnectRequests.get(csrfToken) === request) {
+      reconnectRequests.delete(csrfToken);
+    }
+  });
+  reconnectRequests.set(csrfToken, request);
+  return request;
 }
 
 export function useRoomController(roomCode: string) {
@@ -24,12 +51,6 @@ export function useRoomController(roomCode: string) {
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [wasRemoved, setWasRemoved] = useState(false);
   const [actionPending, setActionPending] = useState(false);
-
-  const { mutateAsync: reconnectRoom } = useMutation({
-    mutationFn: async (csrfToken: string) => {
-      return client.reconnectRoom(csrfToken);
-    },
-  });
 
   useEffect(() => {
     let isActive = true;
@@ -53,7 +74,7 @@ export function useRoomController(roomCode: string) {
       setWasRemoved(false);
 
       try {
-        const reconnectResponse = await reconnectRoom(storedSession.csrf_token);
+        const reconnectResponse = await reconnectRoomOnce(client, loadRoomCsrfToken(storedSession.csrf_token));
         if (!isActive) {
           return;
         }
@@ -61,6 +82,7 @@ export function useRoomController(roomCode: string) {
         saveStoredRoomSession(reconnectResponse.session);
         sessionRef.current = reconnectResponse.session;
         setRoom(reconnectResponse.room);
+        setStatus('ready');
 
         const socket = createSocketClient({ baseUrl: import.meta.env.VITE_API_BASE_URL ?? '' });
         socketRef.current = socket;
@@ -133,9 +155,6 @@ export function useRoomController(roomCode: string) {
           });
           socket.disconnect();
           socketRef.current = null;
-          clearStoredRoomSession();
-          sessionRef.current = null;
-          setStatus('invalid-session');
           setConnectionStatus('error');
           return;
         }
@@ -170,7 +189,7 @@ export function useRoomController(roomCode: string) {
       socketRef.current?.disconnect();
       socketRef.current = null;
     };
-  }, [client, createSocketClient, reconnectRoom, roomCode]);
+  }, [client, createSocketClient, roomCode]);
 
   const leaveRoom = async () => {
     const session = sessionRef.current;
@@ -183,7 +202,7 @@ export function useRoomController(roomCode: string) {
     setActionPending(true);
     setErrorMessage(null);
     try {
-      await client.leaveRoom(session.csrf_token);
+      await client.leaveRoom(loadRoomCsrfToken(session.csrf_token));
     } catch (error) {
       if (isApiStatus(error, 401)) {
         clearStoredRoomSession();
@@ -212,7 +231,7 @@ export function useRoomController(roomCode: string) {
     setActionPending(true);
     setErrorMessage(null);
     try {
-      await client.removeRoomMember({ member_id: memberId }, session.csrf_token);
+      await client.removeRoomMember({ member_id: memberId }, loadRoomCsrfToken(session.csrf_token));
     } catch (error) {
       if (isApiStatus(error, 401)) {
         clearStoredRoomSession();
@@ -235,7 +254,7 @@ export function useRoomController(roomCode: string) {
     setActionPending(true);
     setErrorMessage(null);
     try {
-      await client.closeRoom(session.csrf_token);
+      await client.closeRoom(loadRoomCsrfToken(session.csrf_token));
     } catch (error) {
       if (isApiStatus(error, 401)) {
         clearStoredRoomSession();

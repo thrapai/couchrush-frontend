@@ -38,8 +38,18 @@
       "displayName": "Εμφανιζόμενο όνομα",
       "hostAndPlay": "Host και παίζω",
       "hostOnly": "Μόνο host",
+      "privateRoom": "Ιδιωτικό δωμάτιο",
+      "publicRoom": "Δημόσιο δωμάτιο",
       "displayNameRequired": "Το εμφανιζόμενο όνομα είναι υποχρεωτικό.",
       "roomCodeRequired": "Ο κωδικός δωματίου είναι υποχρεωτικός."
+    },
+    "publicRooms": {
+      "title": "Δημόσια δωμάτια",
+      "subtitle": "Μπείτε σε ανοιχτό λόμπι χωρίς να πληκτρολογήσετε κωδικό.",
+      "loading": "Φόρτωση δημόσιων δωματίων...",
+      "empty": "Δεν υπάρχουν διαθέσιμα δημόσια δωμάτια.",
+      "players": "{{count}}/{{limit}} παίκτες",
+      "unknownHost": "Άγνωστος host"
     },
     "lobby": {
       "title": "Λόμπι",

@@ -38,8 +38,18 @@
       "displayName": "Display name",
       "hostAndPlay": "Host and play",
       "hostOnly": "Host only",
+      "privateRoom": "Private room",
+      "publicRoom": "Public room",
       "displayNameRequired": "Display name is required.",
       "roomCodeRequired": "Room code is required."
+    },
+    "publicRooms": {
+      "title": "Public rooms",
+      "subtitle": "Join an open lobby without typing a code.",
+      "loading": "Loading public rooms...",
+      "empty": "No public rooms are available.",
+      "players": "{{count}}/{{limit}} players",
+      "unknownHost": "Unknown host"
     },
     "lobby": {
       "title": "Lobby",

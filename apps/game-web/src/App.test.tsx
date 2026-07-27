@@ -7,6 +7,7 @@ import type {
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CouchRushThemeProvider } from '@couchrush/theme';
+import { StrictMode } from 'react';
 import { App } from './App';
 import type { ConnectionStatus, RoomSocketClient, RoomSocketEventMap } from './lib/roomSocket';
 
@@ -26,6 +27,7 @@ type MockSocketEventName = keyof RoomSocketEventMap;
 
 class MockRoomSocketClient implements RoomSocketClient {
   connectResponse: HostRoomStateResponse | PlayerRoomStateResponse | null = null;
+  connectMemberShouldHang = false;
   emittedEvents: Array<{ event: string; payload: unknown }> = [];
   private readonly listeners = new Map<string, Set<(payload: unknown) => void>>();
   private readonly connectionListeners = new Set<(status: ConnectionStatus) => void>();
@@ -33,6 +35,10 @@ class MockRoomSocketClient implements RoomSocketClient {
   async connectMember() {
     this.emittedEvents.push({ event: 'connect_to_room', payload: {} });
     this.emitConnectionStatus('connected');
+    if (this.connectMemberShouldHang) {
+      return new Promise<HostRoomStateResponse | PlayerRoomStateResponse | null>(() => undefined);
+    }
+
     return this.connectResponse;
   }
 
@@ -110,9 +116,12 @@ const HOST_ROOM: HostRoomStateResponse = {
   id: '11111111-1111-1111-1111-111111111111',
   code: ROOM_CODE,
   status: 'LOBBY',
+  is_public: false,
   player_limit: 8,
   player_count: 1,
+  inactivity_timeout_seconds: 900,
   created_at: '2026-07-26T12:00:00Z',
+  last_activity_at: '2026-07-26T12:00:00Z',
   members: [HOST_MEMBER],
   viewer_role: 'HOST',
   host_member_id: HOST_MEMBER.id,
@@ -124,6 +133,11 @@ const HOST_ONLY_ROOM: HostRoomStateResponse = {
   player_count: 0,
 };
 
+const PUBLIC_HOST_ROOM: HostRoomStateResponse = {
+  ...HOST_ROOM,
+  is_public: true,
+};
+
 const PLAYER_ROOM: PlayerRoomStateResponse = {
   ...HOST_ROOM,
   members: [HOST_MEMBER, GUEST_MEMBER],
@@ -132,6 +146,11 @@ const PLAYER_ROOM: PlayerRoomStateResponse = {
   self_member_id: GUEST_MEMBER.id,
   self_is_host: false,
   self_is_player: true,
+};
+
+const PUBLIC_PLAYER_ROOM: PlayerRoomStateResponse = {
+  ...PLAYER_ROOM,
+  is_public: true,
 };
 
 const HOST_SESSION: RoomMemberSessionResponse = {
@@ -217,8 +236,10 @@ function renderApp(
   pathname: string,
   {
     socketFactory,
+    strictMode = false,
   }: {
     socketFactory?: () => MockRoomSocketClient;
+    strictMode?: boolean;
   } = {},
 ) {
   window.history.pushState({}, '', pathname);
@@ -228,11 +249,13 @@ function renderApp(
     } as unknown as MockAxiosInstance & ApiClientOptions['axios'],
   };
 
-  return render(
+  const app = (
     <CouchRushThemeProvider defaultMode="dark">
       <App apiClientOptions={apiClientOptions} socketFactory={socketFactory} />
-    </CouchRushThemeProvider>,
+    </CouchRushThemeProvider>
   );
+
+  return render(strictMode ? <StrictMode>{app}</StrictMode> : app);
 }
 
 function installGuestAuthMock() {
@@ -284,6 +307,10 @@ describe('game-web app', () => {
         return jsonResponse(200, { room: PLAYER_ROOM, session: PLAYER_SESSION });
       }
 
+      if (config.url === '/api/rooms/public?page=1&page_size=20') {
+        return jsonResponse(200, { items: [], page: 1, page_size: 20, total: 0 });
+      }
+
       if (config.url === '/api/rooms/reconnect') {
         expect(config.data).toEqual({});
         expect(config.headers?.['X-Room-CSRF-Token']).toBe(PLAYER_SESSION.csrf_token);
@@ -319,7 +346,7 @@ describe('game-web app', () => {
       }
 
       if (config.url === '/api/rooms') {
-        expect(config.data).toEqual({ display_name: 'Host', participate_as_player: true });
+        expect(config.data).toEqual({ display_name: 'Host', participate_as_player: true, is_public: false });
         return jsonResponse(200, { room: HOST_ROOM, session: HOST_SESSION });
       }
 
@@ -353,7 +380,7 @@ describe('game-web app', () => {
       }
 
       if (config.url === '/api/rooms') {
-        expect(config.data).toEqual({ display_name: 'Host', participate_as_player: false });
+        expect(config.data).toEqual({ display_name: 'Host', participate_as_player: false, is_public: false });
         return jsonResponse(200, { room: HOST_ONLY_ROOM, session: HOST_ONLY_SESSION });
       }
 
@@ -378,6 +405,94 @@ describe('game-web app', () => {
     expect(screen.getByText('Host only')).toBeInTheDocument();
   });
 
+  it('creates a public room', async () => {
+    const socket = new MockRoomSocketClient();
+    socket.connectResponse = PUBLIC_HOST_ROOM;
+    installGuestAuthMock();
+    requestMock.mockImplementation(async (config) => {
+      if (config.url === '/api/auth/refresh') {
+        return jsonResponse(401, { detail: 'Invalid refresh token.' });
+      }
+
+      if (config.url === '/api/rooms') {
+        expect(config.data).toEqual({ display_name: 'Host', participate_as_player: true, is_public: true });
+        return jsonResponse(200, { room: PUBLIC_HOST_ROOM, session: HOST_SESSION });
+      }
+
+      if (config.url === '/api/rooms/reconnect') {
+        return jsonResponse(200, {
+          room: PUBLIC_HOST_ROOM,
+          session: { ...HOST_SESSION, csrf_token: 'host-csrf-token-rotated' },
+        });
+      }
+
+      return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
+    });
+
+    renderApp('/', { socketFactory: () => socket });
+
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Display name' }), 'Host');
+    await userEvent.click(screen.getByLabelText('Public room'));
+    await userEvent.click(screen.getByRole('button', { name: 'Create room' }));
+
+    expect(await screen.findByText(`Room code: ${ROOM_CODE}`)).toBeInTheDocument();
+  });
+
+  it('lists and joins a public room', async () => {
+    const socket = new MockRoomSocketClient();
+    socket.connectResponse = PUBLIC_PLAYER_ROOM;
+    installGuestAuthMock();
+    requestMock.mockImplementation(async (config) => {
+      if (config.url === '/api/auth/refresh') {
+        return jsonResponse(401, { detail: 'Invalid refresh token.' });
+      }
+
+      if (config.url === '/api/rooms/public?page=1&page_size=20') {
+        return jsonResponse(200, {
+          items: [
+            {
+              id: HOST_ROOM.id,
+              code: ROOM_CODE,
+              status: 'LOBBY',
+              player_limit: 8,
+              player_count: 1,
+              members: [HOST_MEMBER],
+              host_display_name: 'Host',
+              created_at: '2026-07-26T12:00:00Z',
+              last_activity_at: '2026-07-26T12:00:00Z',
+              inactivity_timeout_seconds: 900,
+            },
+          ],
+          page: 1,
+          page_size: 20,
+          total: 1,
+        });
+      }
+
+      if (config.url === `/api/rooms/public/${HOST_ROOM.id}/join`) {
+        expect(config.data).toEqual({ display_name: 'Alex' });
+        return jsonResponse(200, { room: PUBLIC_PLAYER_ROOM, session: PLAYER_SESSION });
+      }
+
+      if (config.url === '/api/rooms/reconnect') {
+        return jsonResponse(200, {
+          room: PUBLIC_PLAYER_ROOM,
+          session: { ...PLAYER_SESSION, csrf_token: 'player-csrf-token-rotated' },
+        });
+      }
+
+      return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
+    });
+
+    renderApp('/join', { socketFactory: () => socket });
+
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Display name' }), 'Alex');
+    expect(await screen.findByText(ROOM_CODE)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Join' }));
+
+    expect(await screen.findByText(`Room code: ${ROOM_CODE}`)).toBeInTheDocument();
+  });
+
   it('renders the lobby and host-only controls for hosts', async () => {
     const hostSocket = new MockRoomSocketClient();
     hostSocket.connectResponse = HOST_ROOM;
@@ -399,6 +514,58 @@ describe('game-web app', () => {
 
     expect(await screen.findByText(`Room code: ${ROOM_CODE}`)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close room' })).toBeInTheDocument();
+  });
+
+  it('deduplicates StrictMode reconnects for the same room session', async () => {
+    const hostSocket = new MockRoomSocketClient();
+    hostSocket.connectResponse = HOST_ROOM;
+    let reconnectCalls = 0;
+    installGuestAuthMock();
+    window.localStorage.setItem('couchrush.game.room_session', JSON.stringify(HOST_SESSION));
+    requestMock.mockImplementation(async (config) => {
+      if (config.url === '/api/auth/refresh') {
+        return jsonResponse(401, { detail: 'Invalid refresh token.' });
+      }
+
+      if (config.url === '/api/rooms/reconnect') {
+        reconnectCalls += 1;
+        await Promise.resolve();
+        return jsonResponse(200, {
+          room: HOST_ROOM,
+          session: { ...HOST_SESSION, csrf_token: 'host-csrf-token-rotated' },
+        });
+      }
+
+      return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
+    });
+
+    renderApp(`/room/${ROOM_CODE}`, { socketFactory: () => hostSocket, strictMode: true });
+
+    expect(await screen.findByText(`Room code: ${ROOM_CODE}`)).toBeInTheDocument();
+    expect(reconnectCalls).toBe(1);
+  });
+
+  it('shows the lobby after HTTP reconnect even when the socket ack hangs', async () => {
+    const hostSocket = new MockRoomSocketClient();
+    hostSocket.connectMemberShouldHang = true;
+    installGuestAuthMock();
+    window.localStorage.setItem('couchrush.game.room_session', JSON.stringify(HOST_SESSION));
+    requestMock.mockImplementation(async (config) => {
+      if (config.url === '/api/auth/refresh') {
+        return jsonResponse(401, { detail: 'Invalid refresh token.' });
+      }
+
+      if (config.url === '/api/rooms/reconnect') {
+        return jsonResponse(200, { room: HOST_ROOM, session: HOST_SESSION });
+      }
+
+      return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
+    });
+
+    renderApp(`/room/${ROOM_CODE}`, { socketFactory: () => hostSocket });
+
+    expect(await screen.findByText(`Room code: ${ROOM_CODE}`)).toBeInTheDocument();
+    expect(hostSocket.emittedEvents).toContainEqual({ event: 'connect_to_room', payload: {} });
   });
 
   it('does not show host-only controls to normal players', async () => {

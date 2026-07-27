@@ -103,9 +103,12 @@ export interface RoomPublicStateResponse {
   id: string;
   code: string;
   status: RoomStatus;
+  is_public: boolean;
   player_limit: number;
   player_count: number;
+  inactivity_timeout_seconds: number;
   created_at: string;
+  last_activity_at: string;
   members: RoomMemberPublicResponse[];
 }
 
@@ -145,10 +148,16 @@ export interface CreateRoomRequest {
   display_name: string;
   participate_as_player: boolean;
   player_limit?: number;
+  is_public?: boolean;
+  inactivity_timeout_seconds?: number;
 }
 
 export interface JoinRoomRequest {
   room_code: string;
+  display_name: string;
+}
+
+export interface JoinPublicRoomRequest {
   display_name: string;
 }
 
@@ -168,6 +177,26 @@ export interface CreateRoomResponse {
 export interface JoinRoomResponse {
   room: PlayerRoomStateResponse;
   session: RoomMemberSessionResponse;
+}
+
+export interface PublicRoomSummaryResponse {
+  id: string;
+  code: string;
+  status: RoomStatus;
+  player_limit: number;
+  player_count: number;
+  members: RoomMemberPublicResponse[];
+  host_display_name: string | null;
+  created_at: string;
+  last_activity_at: string;
+  inactivity_timeout_seconds: number;
+}
+
+export interface PaginatedPublicRoomsResponse {
+  items: PublicRoomSummaryResponse[];
+  page: number;
+  page_size: number;
+  total: number;
 }
 
 export interface ReconnectRoomResponse {
@@ -339,6 +368,7 @@ export class ApiClient {
       path: '/api/rooms',
       body: payload,
       authenticated: true,
+      retryOnUnauthorized: false,
     });
   }
 
@@ -362,6 +392,29 @@ export class ApiClient {
       path: '/api/rooms/join',
       body: payload,
       authenticated: true,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async listPublicRooms(page = 1, pageSize = 20): Promise<PaginatedPublicRoomsResponse> {
+    const query = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+    });
+
+    return this.request<PaginatedPublicRoomsResponse>({
+      path: `/api/rooms/public?${query.toString()}`,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async joinPublicRoom(roomId: string, payload: JoinPublicRoomRequest): Promise<JoinRoomResponse> {
+    return this.request<JoinRoomResponse>({
+      method: 'POST',
+      path: `/api/rooms/public/${roomId}/join`,
+      body: payload,
+      authenticated: true,
+      retryOnUnauthorized: false,
     });
   }
 

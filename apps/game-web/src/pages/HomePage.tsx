@@ -29,6 +29,7 @@ import {
 import { saveStoredRoomSession } from '../lib/roomSession';
 
 type HostMode = 'host-player' | 'host-only';
+type RoomVisibility = 'public' | 'private';
 type HomeLocationState = {
   registeredEmail?: string;
   registrationMessage?: string;
@@ -56,6 +57,7 @@ export function HomePage() {
     defaultDisplayName(user?.display_name ?? null, user?.email),
   );
   const [hostMode, setHostMode] = useState<HostMode>('host-player');
+  const [roomVisibility, setRoomVisibility] = useState<RoomVisibility>('private');
   const [formError, setFormError] = useState<string | null>(null);
   const [loginForm, setLoginForm] = useState<LoginRequest>({
     email: locationState?.registeredEmail ?? getRememberedEmail(),
@@ -79,6 +81,7 @@ export function HomePage() {
       return client.createRoom({
         display_name: trimmedDisplayName,
         participate_as_player: hostMode === 'host-player',
+        is_public: roomVisibility === 'public',
       });
     },
     onSuccess: (response) => {
@@ -147,6 +150,23 @@ export function HomePage() {
                   value="host-only"
                   control={<Radio size="small" />}
                   label={t('player.form.hostOnly')}
+                />
+              </RadioGroup>
+              <RadioGroup
+                value={roomVisibility}
+                onChange={(event) => {
+                  setRoomVisibility(event.target.value as RoomVisibility);
+                }}
+              >
+                <FormControlLabel
+                  value="private"
+                  control={<Radio size="small" />}
+                  label={t('player.form.privateRoom')}
+                />
+                <FormControlLabel
+                  value="public"
+                  control={<Radio size="small" />}
+                  label={t('player.form.publicRoom')}
                 />
               </RadioGroup>
               <Button
