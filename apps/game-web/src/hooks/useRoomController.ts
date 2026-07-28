@@ -5,7 +5,7 @@ import {
   type RoomControllerStateResponse,
   type RoomMemberSessionResponse,
 } from '@couchrush/api-client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@couchrush/auth';
 import {
   clearStoredRoomSession,
@@ -66,6 +66,18 @@ export function useRoomController(roomCode: string) {
   const [wasRemoved, setWasRemoved] = useState(false);
   const [actionPending, setActionPending] = useState(false);
 
+  const clearRoomSession = useCallback(() => {
+    clearStoredRoomSession();
+    sessionRef.current = null;
+  }, []);
+
+  const disconnectSocket = useCallback((socket: RoomSocketClient | null = socketRef.current) => {
+    socket?.disconnect();
+    if (socketRef.current === socket) {
+      socketRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     let isActive = true;
 
@@ -116,10 +128,8 @@ export function useRoomController(roomCode: string) {
           socket.on('player_removed', ({ member_id: memberId }) => {
             const activeSession = sessionRef.current;
             if (activeSession?.member_id === memberId) {
-              clearStoredRoomSession();
-              sessionRef.current = null;
-              socketRef.current?.disconnect();
-              socketRef.current = null;
+              clearRoomSession();
+              disconnectSocket();
               if (isActive) {
                 setWasRemoved(true);
                 setStatus('invalid-session');
@@ -143,10 +153,8 @@ export function useRoomController(roomCode: string) {
             }
           }),
           socket.on('room_closed', () => {
-            clearStoredRoomSession();
-            sessionRef.current = null;
-            socketRef.current?.disconnect();
-            socketRef.current = null;
+            clearRoomSession();
+            disconnectSocket();
             if (isActive) {
               setStatus('closed');
             }
@@ -164,7 +172,7 @@ export function useRoomController(roomCode: string) {
           disposers.forEach((dispose) => {
             dispose();
           });
-          socket.disconnect();
+          disconnectSocket(socket);
           return;
         }
 
@@ -172,8 +180,7 @@ export function useRoomController(roomCode: string) {
           disposers.forEach((dispose) => {
             dispose();
           });
-          socket.disconnect();
-          socketRef.current = null;
+          disconnectSocket(socket);
           setConnectionStatus('error');
           setErrorMessage('player.lobby.realtimeConnectFailed');
           return;
@@ -188,8 +195,7 @@ export function useRoomController(roomCode: string) {
           });
         };
       } catch (error) {
-        clearStoredRoomSession();
-        sessionRef.current = null;
+        clearRoomSession();
         if (isActive) {
           setErrorMessage(getApiErrorMessage(error));
           setStatus('invalid-session');
@@ -206,15 +212,14 @@ export function useRoomController(roomCode: string) {
     return () => {
       isActive = false;
       disposeListeners?.();
-      socketRef.current?.disconnect();
-      socketRef.current = null;
+      disconnectSocket();
     };
-  }, [client, createSocketClient, roomCode]);
+  }, [clearRoomSession, client, createSocketClient, disconnectSocket, roomCode]);
 
   const leaveRoom = async () => {
     const session = sessionRef.current;
     if (!session) {
-      clearStoredRoomSession();
+      clearRoomSession();
       setStatus('missing-session');
       return false;
     }
@@ -225,8 +230,7 @@ export function useRoomController(roomCode: string) {
       await client.leaveRoom(loadRoomCsrfToken(session.csrf_token));
     } catch (error) {
       if (isApiStatus(error, 401)) {
-        clearStoredRoomSession();
-        sessionRef.current = null;
+        clearRoomSession();
         setStatus('invalid-session');
       }
       setErrorMessage(getApiErrorMessage(error));
@@ -234,10 +238,8 @@ export function useRoomController(roomCode: string) {
       return false;
     }
 
-    socketRef.current?.disconnect();
-    socketRef.current = null;
-    clearStoredRoomSession();
-    sessionRef.current = null;
+    disconnectSocket();
+    clearRoomSession();
     setActionPending(false);
     return true;
   };
@@ -254,8 +256,7 @@ export function useRoomController(roomCode: string) {
       await client.removeRoomMember({ member_id: memberId }, loadRoomCsrfToken(session.csrf_token));
     } catch (error) {
       if (isApiStatus(error, 401)) {
-        clearStoredRoomSession();
-        sessionRef.current = null;
+        clearRoomSession();
         setStatus('invalid-session');
       }
       setErrorMessage(getApiErrorMessage(error));
@@ -279,8 +280,7 @@ export function useRoomController(roomCode: string) {
       await client.closeRoom(loadRoomCsrfToken(session.csrf_token));
     } catch (error) {
       if (isApiStatus(error, 401)) {
-        clearStoredRoomSession();
-        sessionRef.current = null;
+        clearRoomSession();
         setStatus('invalid-session');
       }
       setErrorMessage(getApiErrorMessage(error));
@@ -288,10 +288,8 @@ export function useRoomController(roomCode: string) {
       return false;
     }
 
-    socketRef.current?.disconnect();
-    socketRef.current = null;
-    clearStoredRoomSession();
-    sessionRef.current = null;
+    disconnectSocket();
+    clearRoomSession();
     setStatus('closed');
     setActionPending(false);
     return true;
