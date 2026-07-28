@@ -22,6 +22,20 @@ function isApiStatus(error: unknown, status: number) {
   return typeof error === 'object' && error !== null && 'status' in error && error.status === status;
 }
 
+function withoutRoomMember(roomState: RoomControllerStateResponse | null, memberId: string) {
+  if (!roomState?.members.some((member) => member.id === memberId)) {
+    return roomState;
+  }
+
+  const removedMember = roomState.members.find((member) => member.id === memberId);
+
+  return {
+    ...roomState,
+    members: roomState.members.filter((member) => member.id !== memberId),
+    player_count: removedMember?.is_player ? Math.max(0, roomState.player_count - 1) : roomState.player_count,
+  };
+}
+
 const reconnectRequests = new Map<string, Promise<ReconnectRoomResponse>>();
 
 function reconnectRoomOnce(client: ApiClient, csrfToken: string) {
@@ -94,7 +108,7 @@ export function useRoomController(roomCode: string) {
             }
           }),
           socket.on('room_state_updated', (nextRoomState) => {
-            if (isActive) {
+            if (isActive && sessionRef.current) {
               setRoom(nextRoomState);
               setStatus('ready');
             }
@@ -104,6 +118,8 @@ export function useRoomController(roomCode: string) {
             if (activeSession?.member_id === memberId) {
               clearStoredRoomSession();
               sessionRef.current = null;
+              socketRef.current?.disconnect();
+              socketRef.current = null;
               if (isActive) {
                 setWasRemoved(true);
                 setStatus('invalid-session');
@@ -112,6 +128,7 @@ export function useRoomController(roomCode: string) {
             }
 
             if (isActive) {
+              setRoom((currentRoom) => withoutRoomMember(currentRoom, memberId));
               setServerMessage('player.lobby.memberRemoved');
             }
           }),
@@ -128,6 +145,8 @@ export function useRoomController(roomCode: string) {
           socket.on('room_closed', () => {
             clearStoredRoomSession();
             sessionRef.current = null;
+            socketRef.current?.disconnect();
+            socketRef.current = null;
             if (isActive) {
               setStatus('closed');
             }
@@ -240,9 +259,11 @@ export function useRoomController(roomCode: string) {
         setStatus('invalid-session');
       }
       setErrorMessage(getApiErrorMessage(error));
-    } finally {
       setActionPending(false);
+      return false;
     }
+    setRoom((currentRoom) => withoutRoomMember(currentRoom, memberId));
+    setActionPending(false);
     return true;
   };
 

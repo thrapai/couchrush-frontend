@@ -13,7 +13,7 @@
       "guestMode": "Guest mode",
       "roomClosed": "Room closed",
       "sessionExpired": "Reconnect expired",
-      "removed": "Removed from room"
+      "removed": "You have been removed from this room."
     },
     "home": {
       "title": "CouchRush",

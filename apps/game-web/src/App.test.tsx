@@ -8,6 +8,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CouchRushThemeProvider } from '@couchrush/theme';
 import { StrictMode } from 'react';
+import { act } from 'react';
 import { App } from './App';
 import type { ConnectionStatus, RoomSocketClient, RoomSocketEventMap } from './lib/roomSocket';
 
@@ -602,6 +603,40 @@ describe('game-web app', () => {
     expect(window.localStorage.getItem('couchrush.game.room_session')).toBeNull();
   });
 
+  it('removes a player from the host lobby after the remove action succeeds', async () => {
+    const hostSocket = new MockRoomSocketClient();
+    const roomWithGuest = { ...HOST_ROOM, members: [HOST_MEMBER, GUEST_MEMBER], player_count: 2 };
+    hostSocket.connectResponse = roomWithGuest;
+    installGuestAuthMock();
+    window.localStorage.setItem('couchrush.game.room_session', JSON.stringify(HOST_SESSION));
+    requestMock.mockImplementation(async (config) => {
+      if (config.url === '/api/auth/refresh') {
+        return jsonResponse(401, { detail: 'Invalid refresh token.' });
+      }
+
+      if (config.url === '/api/rooms/reconnect') {
+        return jsonResponse(200, { room: roomWithGuest, session: HOST_SESSION });
+      }
+
+      if (config.url === '/api/rooms/remove-member') {
+        expect(config.data).toEqual({ member_id: GUEST_MEMBER.id });
+        expect(config.headers?.['X-Room-CSRF-Token']).toBe(HOST_SESSION.csrf_token);
+        return jsonResponse(204);
+      }
+
+      return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
+    });
+
+    renderApp(`/room/${ROOM_CODE}`, { socketFactory: () => hostSocket });
+    await screen.findByText('Alex');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Alex' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Alex')).not.toBeInTheDocument();
+    });
+  });
+
   it('deduplicates StrictMode reconnects for the same room session', async () => {
     const hostSocket = new MockRoomSocketClient();
     hostSocket.connectResponse = HOST_ROOM;
@@ -771,6 +806,40 @@ describe('game-web app', () => {
     expect(window.localStorage.getItem('couchrush.game.room_session')).toBeNull();
   });
 
+  it('keeps showing the removed state when a room update follows the removal event', async () => {
+    const socket = new MockRoomSocketClient();
+    socket.connectResponse = PLAYER_ROOM;
+    installGuestAuthMock();
+    window.localStorage.setItem('couchrush.game.room_session', JSON.stringify(PLAYER_SESSION));
+    requestMock.mockImplementation(async (config) => {
+      if (config.url === '/api/auth/refresh') {
+        return jsonResponse(401, { detail: 'Invalid refresh token.' });
+      }
+
+      if (config.url === '/api/rooms/reconnect') {
+        expect(config.headers?.['X-Room-CSRF-Token']).toBe(PLAYER_SESSION.csrf_token);
+        return jsonResponse(200, { room: PLAYER_ROOM, session: PLAYER_SESSION });
+      }
+
+      return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
+    });
+
+    renderApp(`/room/${ROOM_CODE}`, { socketFactory: () => socket });
+    await screen.findByText(`Room code: ${ROOM_CODE}`);
+
+    act(() => {
+      socket.emitServerEvent('player_removed', { member_id: GUEST_MEMBER.id });
+      socket.emitServerEvent('room_state_updated', {
+        ...PLAYER_ROOM,
+        members: [HOST_MEMBER],
+        player_count: 1,
+      });
+    });
+
+    expect(await screen.findByText('You have been removed from this room.')).toBeInTheDocument();
+    expect(window.localStorage.getItem('couchrush.game.room_session')).toBeNull();
+  });
+
   it('shows the room closed state', async () => {
     const socket = new MockRoomSocketClient();
     socket.connectResponse = PLAYER_ROOM;
@@ -792,9 +861,13 @@ describe('game-web app', () => {
     renderApp(`/room/${ROOM_CODE}`, { socketFactory: () => socket });
     await screen.findByText(`Room code: ${ROOM_CODE}`);
 
-    socket.emitServerEvent('room_closed', { room_id: HOST_ROOM.id });
+    act(() => {
+      socket.emitServerEvent('room_closed', { room_id: HOST_ROOM.id });
+      socket.emitServerEvent('player_disconnected', { member_id: HOST_MEMBER.id });
+    });
 
     expect(await screen.findByText('This room has been closed.')).toBeInTheDocument();
+    expect(screen.queryByText('A player disconnected.')).not.toBeInTheDocument();
   });
 
   it('leaves the room and clears the saved session', async () => {
