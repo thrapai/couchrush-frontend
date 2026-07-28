@@ -374,6 +374,48 @@ describe('game-web app', () => {
     expect(screen.getByText('Player')).toBeInTheDocument();
   });
 
+  it('reuses an existing room session instead of joining the same room twice by code', async () => {
+    const socket = new MockRoomSocketClient();
+    socket.connectResponse = HOST_ROOM;
+    window.localStorage.setItem('couchrush.game.room_session', JSON.stringify(HOST_SESSION));
+    installAuthenticatedMock();
+    requestMock.mockImplementation(async (config) => {
+      if (config.url === '/api/auth/refresh') {
+        return jsonResponse(200, { access_token: 'auth-token', token_type: 'bearer', expires_in: 900 });
+      }
+
+      if (config.url === '/api/auth/me') {
+        return jsonResponse(200, AUTH_USER);
+      }
+
+      if (config.url === '/api/users/me') {
+        return jsonResponse(200, AUTH_PROFILE);
+      }
+
+      if (config.url === '/api/rooms/public?page=1&page_size=20') {
+        return jsonResponse(200, { items: [], page: 1, page_size: 20, total: 0 });
+      }
+
+      if (config.url === '/api/rooms/reconnect') {
+        expect(config.headers?.['X-Room-CSRF-Token']).toBe(HOST_SESSION.csrf_token);
+        return jsonResponse(200, { room: HOST_ROOM, session: HOST_SESSION });
+      }
+
+      if (config.url === '/api/rooms/join') {
+        throw new Error('Duplicate join request should not be sent.');
+      }
+
+      return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
+    });
+
+    renderApp('/', { socketFactory: () => socket });
+
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Room code' }), ROOM_CODE.toLowerCase());
+    await userEvent.click(screen.getByRole('button', { name: 'Join room' }));
+
+    expect(await screen.findByText(`Room code: ${ROOM_CODE}`)).toBeInTheDocument();
+  });
+
   it('creates a room as host-only', async () => {
     const socket = new MockRoomSocketClient();
     socket.connectResponse = HOST_ONLY_ROOM;
@@ -526,6 +568,38 @@ describe('game-web app', () => {
 
     expect(await screen.findByText(`Room code: ${ROOM_CODE}`)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close room' })).toBeInTheDocument();
+  });
+
+  it('closes the room after the host close action succeeds', async () => {
+    const hostSocket = new MockRoomSocketClient();
+    hostSocket.connectResponse = HOST_ROOM;
+    installGuestAuthMock();
+    window.localStorage.setItem('couchrush.game.room_session', JSON.stringify(HOST_SESSION));
+    requestMock.mockImplementation(async (config) => {
+      if (config.url === '/api/auth/refresh') {
+        return jsonResponse(401, { detail: 'Invalid refresh token.' });
+      }
+
+      if (config.url === '/api/rooms/reconnect') {
+        return jsonResponse(200, { room: HOST_ROOM, session: HOST_SESSION });
+      }
+
+      if (config.url === '/api/rooms/close') {
+        expect(config.data).toEqual({});
+        expect(config.headers?.['X-Room-CSRF-Token']).toBe(HOST_SESSION.csrf_token);
+        return jsonResponse(204);
+      }
+
+      return jsonResponse(404, { detail: `Unhandled test URL: ${config.url ?? ''}` });
+    });
+
+    renderApp(`/room/${ROOM_CODE}`, { socketFactory: () => hostSocket });
+    await screen.findByText(`Room code: ${ROOM_CODE}`);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close room' }));
+
+    expect(await screen.findByText('This room has been closed.')).toBeInTheDocument();
+    expect(window.localStorage.getItem('couchrush.game.room_session')).toBeNull();
   });
 
   it('deduplicates StrictMode reconnects for the same room session', async () => {

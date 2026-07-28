@@ -27,7 +27,7 @@ import {
   persistRememberedEmail,
   setRememberEmailEnabled,
 } from '../auth/rememberEmail';
-import { saveStoredRoomSession } from '../lib/roomSession';
+import { loadStoredRoomSessionForCode, saveStoredRoomSession } from '../lib/roomSession';
 
 type HostMode = 'host-player' | 'host-only';
 type RoomVisibility = 'public' | 'private';
@@ -77,6 +77,16 @@ export function HomePage() {
     queryKey: ['publicRooms'],
     queryFn: () => client.listPublicRooms(),
   });
+
+  function navigateToStoredRoomSession(roomCodeToCheck: string) {
+    const storedSession = loadStoredRoomSessionForCode(roomCodeToCheck);
+    if (!storedSession) {
+      return false;
+    }
+
+    void navigate(`/room/${storedSession.room_code}`);
+    return true;
+  }
 
   const createRoomMutation = useMutation({
     mutationFn: async () => {
@@ -259,6 +269,11 @@ export function HomePage() {
                   variant="contained"
                   onClick={() => {
                     setFormError(null);
+                    const normalizedRoomCode = roomCode.trim().toUpperCase();
+                    if (navigateToStoredRoomSession(normalizedRoomCode)) {
+                      return;
+                    }
+
                     joinMutation.mutate();
                   }}
                   disabled={joinMutation.isPending}
@@ -314,6 +329,10 @@ export function HomePage() {
                         variant="outlined"
                         onClick={() => {
                           setFormError(null);
+                          if (navigateToStoredRoomSession(room.code)) {
+                            return;
+                          }
+
                           joinPublicMutation.mutate(room.id);
                         }}
                         disabled={joinPublicMutation.isPending}

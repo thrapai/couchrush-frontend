@@ -263,9 +263,16 @@ export function useRoomController(roomCode: string) {
         setStatus('invalid-session');
       }
       setErrorMessage(getApiErrorMessage(error));
-    } finally {
       setActionPending(false);
+      return false;
     }
+
+    socketRef.current?.disconnect();
+    socketRef.current = null;
+    clearStoredRoomSession();
+    sessionRef.current = null;
+    setStatus('closed');
+    setActionPending(false);
     return true;
   };
 
