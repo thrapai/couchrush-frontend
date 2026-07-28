@@ -7,7 +7,8 @@
     },
     "actions": {
       "startGame": "Start game",
-      "endGame": "End game"
+      "endGame": "End game",
+      "createRoom": "Create room"
     }
   }
 }

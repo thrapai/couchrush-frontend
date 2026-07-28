@@ -88,6 +88,126 @@ export interface ErrorDetailResponse {
 
 export type ApiErrorResponse = ErrorDetailResponse | ValidationErrorResponse | unknown;
 
+export type RoomStatus = 'LOBBY' | 'IN_GAME' | 'CLOSED';
+export type RoomViewerRole = 'HOST' | 'PLAYER' | 'DISPLAY';
+
+export interface RoomMemberPublicResponse {
+  id: string;
+  display_name: string;
+  is_host: boolean;
+  is_player: boolean;
+  is_connected: boolean;
+}
+
+export interface RoomPublicStateResponse {
+  id: string;
+  code: string;
+  status: RoomStatus;
+  is_public: boolean;
+  player_limit: number;
+  player_count: number;
+  inactivity_timeout_seconds: number;
+  created_at: string;
+  last_activity_at: string;
+  members: RoomMemberPublicResponse[];
+}
+
+export interface HostRoomStateResponse extends RoomPublicStateResponse {
+  viewer_role: 'HOST';
+  host_member_id: string;
+}
+
+export interface PlayerRoomStateResponse extends RoomPublicStateResponse {
+  viewer_role: 'PLAYER';
+  self_member_id: string;
+  self_is_host: boolean;
+  self_is_player: boolean;
+}
+
+export interface DisplayRoomStateResponse extends RoomPublicStateResponse {
+  viewer_role: 'DISPLAY';
+}
+
+export type RoomControllerStateResponse = HostRoomStateResponse | PlayerRoomStateResponse;
+export type AnyRoomStateResponse =
+  | RoomPublicStateResponse
+  | HostRoomStateResponse
+  | PlayerRoomStateResponse
+  | DisplayRoomStateResponse;
+
+export interface RoomMemberSessionResponse {
+  room_id: string;
+  room_code: string;
+  member_id: string;
+  is_host: boolean;
+  is_player: boolean;
+  csrf_token: string;
+}
+
+export interface CreateRoomRequest {
+  display_name: string;
+  participate_as_player: boolean;
+  player_limit?: number;
+  is_public?: boolean;
+  inactivity_timeout_seconds?: number;
+}
+
+export interface JoinRoomRequest {
+  room_code: string;
+  display_name: string;
+}
+
+export interface JoinPublicRoomRequest {
+  display_name: string;
+}
+
+export interface RemoveRoomMemberRequest {
+  member_id: string;
+}
+
+export interface RoomSessionCsrfRequest {
+  csrf_token: string;
+}
+
+export interface CreateRoomResponse {
+  room: RoomControllerStateResponse;
+  session: RoomMemberSessionResponse;
+}
+
+export interface JoinRoomResponse {
+  room: PlayerRoomStateResponse;
+  session: RoomMemberSessionResponse;
+}
+
+export interface PublicRoomSummaryResponse {
+  id: string;
+  code: string;
+  status: RoomStatus;
+  player_limit: number;
+  player_count: number;
+  members: RoomMemberPublicResponse[];
+  host_display_name: string | null;
+  created_at: string;
+  last_activity_at: string;
+  inactivity_timeout_seconds: number;
+}
+
+export interface PaginatedPublicRoomsResponse {
+  items: PublicRoomSummaryResponse[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
+export interface ReconnectRoomResponse {
+  room: RoomControllerStateResponse;
+  session: RoomMemberSessionResponse;
+}
+
+export interface RefreshRoomSessionResponse {
+  session: RoomMemberSessionResponse;
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly data: ApiErrorResponse;
@@ -153,6 +273,7 @@ interface RequestOptions {
   body?: unknown;
   authenticated?: boolean;
   retryOnUnauthorized?: boolean;
+  headers?: Record<string, string>;
 }
 
 export class ApiClient {
@@ -241,8 +362,127 @@ export class ApiClient {
     });
   }
 
+  async createRoom(payload: CreateRoomRequest): Promise<CreateRoomResponse> {
+    return this.request<CreateRoomResponse>({
+      method: 'POST',
+      path: '/api/rooms',
+      body: payload,
+      authenticated: true,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async getRoom(roomId: string): Promise<RoomPublicStateResponse> {
+    return this.request<RoomPublicStateResponse>({
+      path: `/api/rooms/${roomId}`,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async getRoomByCode(roomCode: string): Promise<RoomPublicStateResponse> {
+    return this.request<RoomPublicStateResponse>({
+      path: `/api/rooms/code/${encodeURIComponent(roomCode)}`,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async joinRoom(payload: JoinRoomRequest): Promise<JoinRoomResponse> {
+    return this.request<JoinRoomResponse>({
+      method: 'POST',
+      path: '/api/rooms/join',
+      body: payload,
+      authenticated: true,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async listPublicRooms(page = 1, pageSize = 20): Promise<PaginatedPublicRoomsResponse> {
+    const query = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+    });
+
+    return this.request<PaginatedPublicRoomsResponse>({
+      path: `/api/rooms/public?${query.toString()}`,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async joinPublicRoom(roomId: string, payload: JoinPublicRoomRequest): Promise<JoinRoomResponse> {
+    return this.request<JoinRoomResponse>({
+      method: 'POST',
+      path: `/api/rooms/public/${roomId}/join`,
+      body: payload,
+      authenticated: true,
+      retryOnUnauthorized: false,
+    });
+  }
+
+  async reconnectRoom(csrfToken: string): Promise<ReconnectRoomResponse> {
+    return this.request<ReconnectRoomResponse>({
+      method: 'POST',
+      path: '/api/rooms/reconnect',
+      body: {},
+      retryOnUnauthorized: false,
+      headers: {
+        'X-Room-CSRF-Token': csrfToken,
+      },
+    });
+  }
+
+  async refreshRoomSession(
+    roomId: string,
+    csrfToken: string,
+  ): Promise<RefreshRoomSessionResponse> {
+    return this.request<RefreshRoomSessionResponse>({
+      method: 'POST',
+      path: `/api/rooms/${roomId}/session/refresh`,
+      body: {},
+      retryOnUnauthorized: false,
+      headers: {
+        'X-Room-CSRF-Token': csrfToken,
+      },
+    });
+  }
+
+  async leaveRoom(csrfToken: string): Promise<void> {
+    await this.request<void>({
+      method: 'POST',
+      path: '/api/rooms/leave',
+      body: {},
+      retryOnUnauthorized: false,
+      headers: {
+        'X-Room-CSRF-Token': csrfToken,
+      },
+    });
+  }
+
+  async removeRoomMember(payload: RemoveRoomMemberRequest, csrfToken: string): Promise<void> {
+    await this.request<void>({
+      method: 'POST',
+      path: '/api/rooms/remove-member',
+      body: payload,
+      retryOnUnauthorized: false,
+      headers: {
+        'X-Room-CSRF-Token': csrfToken,
+      },
+    });
+  }
+
+  async closeRoom(csrfToken: string): Promise<void> {
+    await this.request<void>({
+      method: 'POST',
+      path: '/api/rooms/close',
+      body: {},
+      retryOnUnauthorized: false,
+      headers: {
+        'X-Room-CSRF-Token': csrfToken,
+      },
+    });
+  }
+
   private async request<T>(options: RequestOptions, accessTokenOverride?: string | null): Promise<T> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = { ...(options.headers ?? {}) };
 
     if (options.body !== undefined) {
       headers['Content-Type'] = 'application/json';
